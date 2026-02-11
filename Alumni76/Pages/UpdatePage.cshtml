@@ -1,0 +1,110 @@
+﻿@page
+@model Alumni76.Pages.UpdatePageModel
+@{
+    ViewData["Title"] = "עדכון פרטים"; // Update User Details
+}
+
+<div class="container">
+    @* Display Success/Error Messages from TempData (for messages from redirects) *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (Model.UserToDisplay != null)
+    {
+        <form method="post">
+            @Html.AntiForgeryToken()
+
+            @* --- ADDED: Validation Summary for general form errors --- *@
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <input type="hidden" asp-for="UserId" /> @* Hidden field to pass UserId on post *@
+
+            <div class="form-group row mb-3">
+                <label asp-for="FirstName" class="col-sm-2 col-form-label">שם פרטי:</label> @* First Name: *@
+                <div class="col-sm-9">
+                    <input asp-for="FirstName" class="form-control" />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label asp-for="LastName" class="col-sm-2 col-form-label">שם משפחה:</label> @* Last Name: *@
+                <div class="col-sm-9">
+                    <input asp-for="LastName" class="form-control" />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label asp-for="Email" class="col-sm-2 col-form-label">אימייל:</label>
+                <div class="col-sm-9">
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label asp-for="Phone1" class="col-sm-2 col-form-label">טלפון:</label> 
+                <div class="col-sm-9">
+                    <input asp-for="Phone1" class="form-control" />
+                    <span asp-validation-for="Phone1" class="text-danger"></span>
+                </div>
+            </div>
+
+            <hr /> @* Separator for password fields *@
+            <h3>שינוי סיסמה (אופציונלי)</h3> @* Change Password (Optional) *@
+            <p>השאר שדות אלה ריקים אם אינך רוצה לשנות את הסיסמה.</p> @* Leave these fields empty if you don't want to change the password. *@
+
+            <div class="form-group row mb-3">
+                <label asp-for="NewPassword" class="col-sm-2 col-form-label">סיסמה חדשה:</label> @* New Password: *@
+                <div class="col-sm-9">
+                    <input asp-for="NewPassword" class="form-control" />
+                    <span asp-validation-for="NewPassword" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label asp-for="ConfirmPassword" class="col-sm-2 col-form-label">אימות סיסמה:</label> @* Confirm Password: *@
+                <div class="col-sm-9">
+                    <input asp-for="ConfirmPassword" class="form-control" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+            </div>
+            <br /><br />
+            <div class="form-group row">
+                <div id="actionButton">
+                    @* class="col-sm-9 offset-sm-3" *@
+                    <button type="submit" class="btn btn-primary" style="font-size:1.1em;">שמור שינויים</button> @* Save Changes *@
+                    <a asp-page="/UsersPage" class="btn btn-secondary" style="font-size:1.1em;margin-right:25px;">ביטול</a> @* Cancel *@
+                </div>
+            </div>
+        </form>
+    }
+    else
+    {
+        <h3>טוען פרטי משתמש...</h3> @* Loading user details... *@
+    }
+</div>
+<style>
+    .col-form-label{
+        font-size:1.2em!important;
+    }
+    .form-control {
+        width: 50%;
+    }
+  </style>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

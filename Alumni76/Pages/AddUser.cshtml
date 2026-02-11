@@ -1,0 +1,285 @@
+﻿@page
+@model Alumni76.Pages.AddUserModel
+@{
+    ViewData["Title"] = "הוספת מעריך";
+}
+
+<div class="container mt-4">
+    @* 
+    @if (!string.IsNullOrEmpty(Model.Message))
+    {
+        <div class="alert @(Model.ModelState.IsValid ? "alert-success" : "alert-danger")" role="alert">
+            @Model.Message
+        </div>
+    }
+ *@
+    @* FIX: Display Success Message from TempData after a Redirect *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @Html.Raw(TempData["SuccessMessage"])
+        </div>
+    }
+
+    @* FIX: Display Error Message from TempData after a Redirect (from other parts of the code) *@
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @* Keep the existing Model.Message check for non-redirect validation failures *@
+    @if (!string.IsNullOrEmpty(Model.Message))
+    {
+        <div class="alert @(Model.ModelState.IsValid ? "alert-success" : "alert-danger")" role="alert">
+            @Model.Message
+        </div>
+    }
+
+    <div class="mb-4">
+        <form id="addUserForm" method="post">
+            @Html.AntiForgeryToken()
+            <div id="newUser" class="row">
+                <div id="newUserData" class="col-md-10 order-md-1">
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">פרטי משתמש חדש</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="NewUser.FirstName" class="form-label">שם פרטי</label>
+                                <input asp-for="NewUser.FirstName" class="form-control" />
+                                <span asp-validation-for="NewUser.FirstName" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="NewUser.LastName" class="form-label">שם משפחה</label>
+                                <input asp-for="NewUser.LastName" class="form-control" />
+                                <span asp-validation-for="NewUser.LastName" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="NewUser.MaidenName" class="form-label">שם משפחחה בנעורים</label>
+                                <input asp-for="NewUser.MaidenName" class="form-control" />
+                                <span asp-validation-for="NewUser.MaidenName" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="NewUser.NickName" class="form-label">כינוי</label>
+                                <input asp-for="NewUser.NickName" class="form-control" />
+                                <span asp-validation-for="NewUser.NickName" class="text-danger"></span>
+                            </div>                            
+                            <div class="mb-3">
+                                <label class="form-label">כיתה</label>
+                                <div class="d-flex gap-3 flex-grow-2" style="max-width: 500px;">
+                                    @foreach (var className in new[] { "יב-1", "יב-2", "יב-3", "יב-4", "יב-5" })
+                                    {
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" asp-for="NewUser.Class" value="@className" id="class_@className">
+                                            <label class="form-check-label" for="class_@className">@className</label>
+                                        </div>
+                                    }
+                                </div>
+                                <span asp-validation-for="NewUser.Class" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="NewUser.Email" class="form-label">אימייל</label>
+                                <input asp-for="NewUser.Email" class="form-control" />
+                                <span asp-validation-for="NewUser.Email" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="NewUser.Phone1" class="form-label">טלפון 1</label>
+                                <input asp-for="NewUser.Phone1" class="form-control" />
+                                <span asp-validation-for="NewUser.Phone1" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="NewUser.Phone2" class="form-label">טלפון 2</label>
+                                <input asp-for="NewUser.Phone2" class="form-control" />
+                                <span asp-validation-for="NewUser.Phone2" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="NewUser.Address" class="form-label">כתובת</label>
+                                <input asp-for="NewUser.Address" class="form-control" />
+                                <span asp-validation-for="NewUser.Address" class="text-danger"></span>
+                            </div>
+                                                                                  
+                        </div>
+                    </div>
+                </div>                
+            </div>
+
+            <button type="submit" id="submitAddUser" style="display: none;"></button>            
+
+            <div id="actionButtons" class="justify-content-end align-items-center text-center mt-3">
+                <button type="submit" class="btn btn-primary me-2">הוסף</button>
+                <a asp-page="/Index" class="btn btn-secondary me-2">ביטול</a>
+                @if (!Model.IsSpecialAdmin)
+                {
+                    <button type="button" class="btn btn-primary me-2" onclick="document.getElementById('bulkAddFileInput').click();">טעינה מקובץ</button>
+                    <button type="button" class="btn btn-info" onclick="showBulkAddHelp()">עזרה</button>
+                }
+            </div>
+        </form>
+
+        <form id="bulkAddForm" method="post" asp-page-handler="BulkAdd" enctype="multipart/form-data">
+            <input type="file" id="bulkAddFileInput" name="BulkAddFile" style="display: none;" onchange="this.form.submit()" accept=".xlsx" />
+            <button type="submit" id="submitBulkAdd" style="display: none;"></button>
+        </form>
+
+        <hr class="my-4">
+     
+    </div>
+</div>
+<style>
+    /* Custom style to ensure all buttons in the action bar have the same font size */
+    #actionButtons .btn {
+        font-size: 1.1em;
+        padding: 0.5rem 1rem !important;
+        margin-right: 1em !important;
+    }
+
+    /* הופך כל קבוצת שדה לשורה אחת */
+    .card-body .mb-3 {
+        display: flex;
+        align-items: center;
+        gap: 15px; /* רווח בין האלמנטים */
+    }
+
+    /* מקבע את רוחב הכותרת (Label) */
+    .card-body .form-label {
+        width: 120px;
+        margin-bottom: 0;
+        flex-shrink: 0; /* מונע מהכותרת להתכווץ */
+    }
+
+    /* מרחיב את תיבת הטקסט (Input) */
+    .card-body .form-control {
+        flex-grow: 2; /* גורם לשדה לקחת את רוב המקום */
+        max-width: 500px; /* מגביל את הרוחב המקסימלי כדי שלא יהיה רחב מדי במסכים ענקיים */
+    }
+
+    /* עיצוב הודעת השגיאה שתופיע משמאל */
+    .card-body .text-danger {
+        flex-grow: 1;
+        font-size: 1.1em; /* Enlarged from 0.85em */
+        font-weight: 500; /* Makes it slightly bolder for readability */
+        white-space: nowrap;
+        padding-right: 10px; /* Adds a gap between input and error */
+    }
+    /* Enlarges the text next to the radio buttons */
+    .card-body .form-check-label {
+        font-size: 1.4em; /* Adjust this number as needed */
+        font-weight: bold;
+        cursor: pointer; /* Makes it feel more interactive */
+    }
+</style>
+<div class="modal fade" id="bulkUsersModal" tabindex="-1" aria-labelledby="bulkUsersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="bulkUsersModalLabel">רשימת בוגרים שנוספה</h5>
+            </div>
+            <div class="modal-body">
+                <ul id="bulkUsersList">
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="excelHelpModal" tabindex="-1" aria-labelledby="excelHelpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-custom-width">        @* modal-xl *@
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="excelHelpModalLabel">&nbsp&nbsp סדר עמודות בקובץ אקסל - יש להקפיד על שם בחינה מדויק</h5>
+            </div>
+            <div class="modal-body text-center">
+                <img src="~/images/users.png" class="help-image" alt="סדר עמודות אקסל" />    @* class="img-fluid" *@
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">סגור</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .modal-custom-width {
+        max-width: 1100px;
+        margin: 1.75rem auto;
+    }
+
+    .help-image {
+        max-width: 900px;
+        width: 100%;
+        height: auto;
+    }
+</style>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+            document.addEventListener('DOMContentLoaded', function () {
+            const bulkUsersHtml = '@Html.Raw(TempData["BulkUsers"])';
+
+            // Check if the string data exists
+            if (bulkUsersHtml && bulkUsersHtml.trim().length > 0) {
+                // Get the <ul> element to populate
+                const bulkUsersList = document.getElementById('bulkUsersList');
+                bulkUsersList.innerHTML = ''; // Clear any previous content
+
+                // Split the string by the <br /> tag to get individual user lines
+                const bulkUsersArray = bulkUsersHtml.split('<br />');
+
+                // Loop through the data and create list items
+                bulkUsersArray.forEach(userLine => {
+                    if (userLine.trim().length > 0) {
+                        const li = document.createElement('li');
+                        li.textContent = userLine.trim();
+                        bulkUsersList.appendChild(li);
+                    }
+                });
+
+                // Show the Bootstrap modal
+                const bulkUsersModal = new bootstrap.Modal(document.getElementById('bulkUsersModal'));
+                bulkUsersModal.show();
+            }
+        });
+
+            document.addEventListener('DOMContentLoaded', () => {
+            const trigger = document.getElementById('addUserTrigger');
+            const form = document.getElementById('addUserForm');
+
+            trigger.addEventListener('click', () => {
+                form.requestSubmit(); // fires submit event, spinner logic runs
+            });
+        });
+
+        function showBulkAddHelp() {
+        //         const message = `
+        // סדר העמודות בקובץ האקסל צריך להיות:
+        // FirstName,LastName,Email,Role,Exam1,Exam2
+
+        // * התפקיד חייב להיות באנגלית: Evaluator / Senior / Admin
+        // * ניתן להזין עד 2 בחינות למעריך. יש להקפיד על שם בחינה מדויק.
+        // * הסיסמה שתיווצר תישלח באימייל
+        // * מומלץ לשנות אותה בהקדם.
+        //         `.trim();
+        //         alert(message);
+
+                const myModal = document.getElementById('excelHelpModal');
+                // 2. Create a new Bootstrap Modal instance
+                const bsModal = new bootstrap.Modal(myModal);
+                // 3. Show the modal
+                bsModal.show();
+            }
+    </script>
+}

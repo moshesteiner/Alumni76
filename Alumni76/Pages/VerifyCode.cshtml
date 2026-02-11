@@ -1,0 +1,36 @@
+﻿@page
+@model Alumni76.Pages.VerifyCodeModel
+@{
+    ViewData["Title"] = "אימות כניסה ראשוני";
+}
+
+<h1>@ViewData["Title"]</h1>
+<h3>(נשלח באימייל)</h3>
+<br /><br />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <input type="hidden" asp-for="UserId" />
+            <div class="form-group">
+                <label asp-for="Code"></label>
+                <input asp-for="Code" class="form-control" />
+                <span asp-validation-for="Code" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="NewPassword"></label>
+                <input asp-for="NewPassword" class="form-control" />
+                <span asp-validation-for="NewPassword" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ConfirmPassword"></label>
+                <input asp-for="ConfirmPassword" class="form-control" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            </div>
+            <br />
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">אימות ושינוי סיסמה</button>
+            </div>
+            <div asp-validation-summary="All" class="text-danger"></div>
+        </form>
+    </div>
+</div>

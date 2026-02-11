@@ -1,0 +1,138 @@
+﻿@page
+@model UsersPageModel
+@using Alumni76.Utilities
+@{
+    ViewData["Title"] = "ניהול משתמשים";
+}
+
+<div class="full-width-content">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @Html.Raw(TempData["SuccessMessage"])
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="main-container">
+        <div class="buttunBox">
+            <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">
+                סינון
+            </button>
+        </div>
+
+        <div class="userTable">
+            @if (Model.DisplayUsers != null && Model.DisplayUsers.Any())
+            {
+                var sortState = (List<string>)(ViewData["SortState"])!;
+                Func<string, string> getSortDir = colName =>
+                {
+                    if (sortState != null && sortState.Any() && sortState.First().StartsWith(colName))
+                    {
+                        return sortState.First().EndsWith("_asc") ? "desc" : "asc";
+                    }
+                    return "asc";
+                };
+                Func<string, string> getSortDirIcon = colName =>
+                {
+                    if (sortState == null || !sortState.Any() || !sortState.First().StartsWith(colName)) return "";
+                    return sortState.First().EndsWith("_asc") ? "up" : "down";
+                };
+
+                <table class="table table-bordered table-striped mt-3 user-table-compact">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>
+                                <a asp-page="UsersPage" asp-route-sort="FirstName" asp-route-dir="@getSortDir("FirstName")">
+                                    שם פרטי @(getSortDirIcon("FirstName") != "" ? Html.Raw($"<i class='bi bi-arrow-{getSortDirIcon("FirstName")}'></i>") : "")
+                                </a>
+                            </th>
+                            <th>
+                                <a asp-page="UsersPage" asp-route-sort="LastName" asp-route-dir="@getSortDir("LastName")">
+                                    שם משפחה @(getSortDirIcon("LastName") != "" ? Html.Raw($"<i class='bi bi-arrow-{getSortDirIcon("LastName")}'></i>") : "")
+                                </a>
+                            </th>
+                            <th>שם נעורים</th>
+                            <th>כיתה</th>
+                            <th>טלפון-1</th>
+                            <th>טלפון-2</th>
+                            <th>אימייל</th>
+                            <th>כתובת</th>
+                            <th>איפוס סיסמה</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.DisplayUsers)
+                        {
+                            <tr data-user-id="@user.UserId">
+                                <td>@(Model.DisplayUsers.IndexOf(user) + 1)</td>
+                                <td>@user.FirstName</td>
+                                <td>@user.LastName</td>
+                                <td>@user.MaidenName</td>
+                                <td>@user.Class</td>
+                                <td>@user.Phone1</td>
+                                <td>@user.Phone2</td>
+                                <td>@user.Email</td>
+                                <td>@user.Address</td>
+                                <td>
+                                    <form method="post" asp-page-handler="ResetPassword">
+                                        <input type="hidden" name="userId" value="@user.UserId" />
+                                        <button type="submit" class="btn btn-warning btn-sm"
+                                                onclick="return confirm('האם אתה בטוח שברצונך לאפס את הסיסמה עבור @user.FirstName @user.LastName?');">
+                                            איפוס סיסמה
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <h3 class="mt-4">אין משתמשים להצגה במערכת.</h3>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .main-container {
+        display: flex;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .buttunBox {
+        flex: 1;
+        direction: rtl;
+    }
+
+    .filter-button {
+        margin: 40px 0px 0px 20px;
+    }
+
+    .userTable {
+        flex: 9;
+        padding: 0px 20px;
+    }
+
+    th a {
+        text-decoration: none;
+        color: inherit;
+    }
+</style>
+
+@section Scripts {
+    @await Html.PartialAsync("_FilterDialog", Model.FilterModel)
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

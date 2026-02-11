@@ -1,0 +1,228 @@
+@using Microsoft.Extensions.Configuration
+@using Alumni76.Models
+@inject IConfiguration Configuration
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@inject Microsoft.Extensions.Options.IOptions<Alumni76.Models.AppSettings> AppSettings
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+@{
+                            bool isMaintenanceMode = Configuration.GetValue<bool>("MaintenanceMode:IsEnabled");
+}
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - הערכת בגרות</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @* <link rel="stylesheet" href="~/Alumni76.styles.css" asp-append-version="true" /> *@
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+
+<body>
+    <div id="layout-wrapper">
+        @* Overall wrapper for the grid layout *@       
+
+        <header id="title-area">
+            <div id="subTitle">
+                <div id="subTitleRight" class="container-fluid py-3">
+                    <h1>@ViewData["Title"]</h1>
+                    @{
+                        // var isSpecial = ViewData["special"] as string == "true" ? true : false;
+                        var isSpecial = User.HasClaim("IsSpecialAdmin", "true") ? true : false;
+                    }
+                </div>
+                <div id="subTitleLeft" class="container-fluid py-3">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <h3 style="margin:0px;padding:0px"> @User.Identity.Name</h3>
+                    }
+                </div>
+            </div>
+        </header>
+
+        <div id="logo">
+            @if (isMaintenanceMode)
+            {
+                <h2 style="color: red;">🛑 מצב תחזוקה</h2>
+                <small>מצב תחזוקה</small>
+            }
+            else
+            {
+                <h2>עירוני ה</h2>
+                <small>מחזור כא</small>
+            }
+        </div>
+
+        <div id="menu-area">
+            <nav>
+                <div id="menu-center">
+                    <hr />
+                    @{
+                        // Get the current page path without query string
+                        var currentPagePath = ViewContext.ActionDescriptor.DisplayName?.Split('?')[0];
+                    }
+                    @* Standard Menu (existing items) *@
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">עמוד הבית</a>
+                        </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/UsersPage">חברים</a>
+                            </li>
+                            <br />
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/UpdatePage">עדכון פרטים</a>
+                            </li>
+                            <br />
+                            @if (isSpecial)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-page="/AddUser">הוספת חבר/ה</a>
+                                </li>
+                            }
+                        }
+                        <br />
+                    </ul>
+                </div>
+                <div id="menu-bottom">
+                    <hr />
+                    <ul class="nav flex-column">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <form method="post" asp-page="/Index" asp-page-handler="Logout" class="nav-item">
+                                <button type="submit" class="nav-link btn btn-link text-dark">התנתקות</button>
+                                @* CRUCIAL FOR CSRF PROTECTION *@
+                                @Html.AntiForgeryToken()
+                            </form>
+                        }
+                        <br />
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/About">אודות</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <main id="main-area" role="main">
+            <div class="main-content-scroll">
+                @RenderBody()
+            </div>
+        </main>
+
+        <footer id="footer-area">
+            @{
+                //var connectionString = Configuration.GetConnectionString("DefaultConnection"); // Use the name of your connection string
+                var activeDb = Configuration["AppSettings:ActiveConnectionName"]!;
+                var connectionString = Configuration.GetConnectionString(activeDb);
+                var dbName = "Unknown"; // Default value
+
+                if (!string.IsNullOrEmpty(connectionString))
+                {
+                    // A simple way to get the database name from the connection string
+                    var parts = connectionString.Split(';');
+                    var dbPart = parts.FirstOrDefault(p => p.Trim().StartsWith("Database=", StringComparison.OrdinalIgnoreCase));
+                    if (dbPart != null)
+                    {
+                        dbName = dbPart.Split('=').Last().Trim();
+                    }
+                }
+                var loggedSeniors = "";
+                @if (@ViewData.ContainsKey("loggedInSeniors") && @ViewData["loggedInSeniors"] is List<User> loggedInSeniors && loggedInSeniors.Any())
+                {
+                    if (loggedInSeniors.Count > 0)
+                    {
+                        loggedSeniors = $"מעריכים בכירים מחוברים:<br />";
+                        for (int i = 0; i < loggedInSeniors.Count - 1; i++)
+                        {
+                            loggedSeniors += $"{loggedInSeniors[i].FirstName} {loggedInSeniors[i].LastName},";
+                        }
+                        loggedSeniors += $"{loggedInSeniors[loggedInSeniors.Count - 1].FirstName} {loggedInSeniors[loggedInSeniors.Count - 1].LastName}";
+                    }
+                }
+            }
+            @{
+                var footer = "2026 - עירוני ה' מחזור כא - תל אביב - משה שטיינר - ";
+            }
+            @if (!dbName.Contains("_cs_")) @*AppSettings.Value.Release*@
+            {
+                <div id="footer-container">
+                    <div id="footer-right">
+                        @Html.Raw(@loggedSeniors)
+                    </div>
+                    <div id="footer-center">
+                        <div class="container-fluid py-3">
+                            &copy; @footer<a asp-area="" asp-page="/About">אודות</a>
+                        </div>
+                    </div>
+                    <div id="footer-left">
+                        version: @AppSettings.Value.Version (build @AppSettings.Value.BuildNumber)<br />
+                        source: @AppSettings.Value.GitCommitHash<br />
+                        db: @dbName
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div id="footer-container" class="footer-dev">
+                    <div id="footer-right">
+                        @Html.Raw(@loggedSeniors)
+                    </div>
+                    <div id="footer-center">
+                        <div class="container-fluid py-3">
+                            &copy; @footer<a asp-area="" asp-page="/About">אודות</a>
+                        </div>
+                    </div>
+                    <div id="footer-left">
+                        version: @AppSettings.Value.Version (build @AppSettings.Value.BuildNumber)<br />
+                        source: @AppSettings.Value.GitCommitHash<br />
+                        db: @dbName
+                    </div>
+                </div>
+            }
+        </footer>
+        <style>
+            #footer-container {
+                display: flex;
+            }
+
+            #footer-right {
+                flex: 2;
+                text-align: right;
+                font-size: 0.8em;
+                padding-right: 15px;
+            }
+
+            #footer-center {
+                flex: 5;
+                text-align: center;
+            }
+
+            #footer-left {
+                flex: 2;
+                text-align: left;
+                padding-left: 25px;
+                font-size: 0.8em;
+            }
+        </style>
+
+    </div> @* End of layout-wrapper *@
+
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>window.nativeAlert = window.alert;</script>
+    <script src="~/js/alert-override.js"></script>  @* ⭐ MUST LOAD FIRST to replace window.alert *@
+    <script src="~/js/global-form-submit.js"></script> @* This file can now safely call alert() *@
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+
+</html>
