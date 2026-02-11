@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>דיון בנושא מחוון בגרות</title>
+</head>
+<body dir="rtl" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; direction: rtl; text-align: right;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; direction: rtl; text-align: right;">
+        <h2 style="color: #0056b3;">שלום {ToFirstName},</h2>
+
+        <p>
+            {SenderFirstName} מבקשת/ת לשמוע את דעתך בענין:<br />
+            <strong>{ExamTitle}</strong><br />
+            <strong>{QuestionNumber}</strong> <strong>{QuestionPart}</strong>
+        </p>
+
+
+        <p>
+            <strong>מהות הבירור:</strong> {IssueDetails}<br />
+            <strong>{Description}</strong>
+        </p>
+        <div style="background-color: #f9f9f9; border-right: 5px solid #28a745; padding: 10px; margin: 15px 0;">
+            <p style="direction: rtl; text-align: right;"><strong>ההודעה:</strong></p>
+            <p style="direction: rtl; text-align: right;">{Message}</p>
+        </div>
+        <p>
+            בברכה,<br />
+            {SenderFirstName}
+        </p>
+    </div>
+    <style>
+        p {
+            font-size: 14px;
+        }
+    </style>
+</body>
+</html>

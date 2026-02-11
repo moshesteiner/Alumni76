@@ -1,0 +1,185 @@
+﻿@page
+@model Bagrut_Eval.Pages.Reports.IssueLogModel
+@using Bagrut_Eval.Utilities
+@{
+    ViewData["Title"] = "היסטורית שאלות-תשובות"; // "Issue Log Report"
+}
+
+<div class="d-flex align-items-center mb-3">
+    <form method="post" asp-page-handler="Filter" class="me-3">
+        <div class="form-group d-flex align-items-center">
+            <label asp-for="SelectedExamId" class="me-3 exam-label">בחר בחינה:</label>
+            <select asp-for="SelectedExamId" asp-items="Model.AvailableExams" class="form-control" onchange="this.form.submit()">
+                <option value="">-- בחר בחינה --</option>
+            </select>
+        </div>
+    </form>
+
+    @*  @if (Model.SelectedExamId.HasValue && Model.SelectedExamId.Value > 0) *@
+    @*   { *@
+    <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">
+        סינון
+    </button>
+
+    <form method="post" asp-page-handler="ResetSort" class="d-inline">
+        <input type="hidden" name="selectedExamId" value="@Model.SelectedExamId" />
+        <button type="submit" class="btn btn-primary filter-button">איפוס מיון וסינון</button> @*class="btn btn-warning btn-sm"*@
+    </form>
+    @*  } *@
+</div>
+<hr />
+@if (Model.SelectedExamId.HasValue && Model.SelectedExamId.Value > 0)
+{
+    @if (Model.IssueLogs.Any())
+    {
+        <div class="table-responsive">
+            @{
+                var sortState = (List<string>)(ViewData["SortState"])!;
+                Func<string, string> getSortDir = colName =>
+                {
+                    if (sortState == null || !sortState.Any()) return "asc";
+                    if (sortState.First().StartsWith(colName)) return sortState.First().EndsWith("_asc") ? "desc" : "asc";
+                    return "asc";
+                };
+                Func<string, string> getSortDirIcon = colName =>
+                {
+                    if (sortState == null || !sortState.Any() || !sortState.First().StartsWith(colName)) return "";
+                    return sortState.First().EndsWith("_asc") ? "up" : "down";
+                };
+                var line = 0;
+            }
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th></th> @*line number*@
+                        <th style="width: 5%;">
+                            <a asp-page="IssueLog"
+                               asp-route-selectedExamId="@Model.SelectedExamId"
+                               asp-route-sort="QuestionNumber"
+                               asp-route-secondarySort="Part.QuestionPart"
+                               asp-route-dir="@getSortDir("QuestionNumber")"
+                               asp-route-FilterSortModel.ShowClosed="@Model.FilterModel!.ShowClosed"
+                               asp-route-FilterSortModel.ShowNewerThanLastLogin="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.DescriptionSearchTerm="@Model.FilterModel.DescriptionSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.UserNameSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.FilterFromDate"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.FilterToDate">
+                                סעיף
+                                @if (getSortDirIcon("QuestionNumber") != "")
+                                {
+                                    <i class="bi bi-arrow-@getSortDirIcon("QuestionNumber")"></i>
+                                }
+                            </a>
+                        </th>
+                        <th style="width: 30%;">תיאור השאלה</th>
+                        <th style="width: 5%;">
+                            <a asp-page="IssueLog"
+                               asp-route-selectedExamId="@Model.SelectedExamId"
+                               asp-route-sort="Status"
+                               asp-route-dir="@getSortDir("Status")"
+                               asp-route-FilterSortModel.ShowClosed="@Model.FilterModel.ShowClosed"
+                               asp-route-FilterSortModel.ShowNewerThanLastLogin="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.DescriptionSearchTerm="@Model.FilterModel.DescriptionSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.UserNameSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.FilterFromDate"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.FilterToDate">
+                                סטטוס
+                                @if (getSortDirIcon("Status") != "")
+                                {
+                                    <i class="bi bi-arrow-@getSortDirIcon("Status")"></i>
+                                }
+                            </a>
+                        </th>
+                        <th style="width: 30%;">תשובה</th>
+                        <th style="width: 15%;">
+                            <a asp-page="IssueLog"
+                               asp-route-selectedExamId="@Model.SelectedExamId"
+                               asp-route-sort="Date"
+                               asp-route-dir="@getSortDir("Date")"
+                               asp-route-FilterSortModel.ShowClosed="@Model.FilterModel.ShowClosed"
+                               asp-route-FilterSortModel.ShowNewerThanLastLogin="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.DescriptionSearchTerm="@Model.FilterModel.DescriptionSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.UserNameSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.FilterFromDate"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.FilterToDate">
+                                תאריך
+                                @if (getSortDirIcon("Date") != "")
+                                {
+                                    <i class="bi bi-arrow-@getSortDirIcon("Date")"></i>
+                                }
+                            </a>
+                        </th>
+                        <th style="width: 15%;">
+                            <a asp-page="IssueLog"
+                               asp-route-selectedExamId="@Model.SelectedExamId"
+                               asp-route-sort="User"
+                               asp-route-dir="@getSortDir("User")"
+                               asp-route-FilterSortModel.ShowClosed="@Model.FilterModel.ShowClosed"
+                               asp-route-FilterSortModel.ShowNewerThanLastLogin="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.DescriptionSearchTerm="@Model.FilterModel.DescriptionSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.UserNameSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.FilterFromDate"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.FilterToDate">
+                                טיפל בתשובה
+                                @if (getSortDirIcon("User") != "")
+                                {
+                                    <i class="bi bi-arrow-@getSortDirIcon("User")"></i>
+                                }
+                            </a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.IssueLogs)
+                    {
+                        <tr>
+                            @{
+                                var question = log.Issue!.Part != null ? log.Issue.Part.QuestionNumber : log.Issue.QuestionNumber;
+                                if (question != "" && log.Issue.Part?.QuestionPart != "")
+                                {
+                                    question += log.Issue.Part?.QuestionPart;
+                                }
+                                line++;
+                            }
+                            <td>@line</td>
+                            <td>@question</td>
+                            <td>@log.Issue.Description</td> @* Original issue description *@
+                            <td>@Model.GetIssueStatusDisplay(log.Issue.Status)</td>
+                            <td>@log.Description</td> @* The log entry description (including previous answer) *@
+                            <td>@TimeConverter.ConvertUtcToIsraelTime(log.LogDate).ToString("dd/MM/yyyy HH:mm")</td>
+                            
+                            <td>@log.User!.FirstName @log.User.LastName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <br />
+        <h3>אין מידע על בחינה זו</h3>
+    }
+}
+else
+{
+    <br />
+    <h3>נא לבחור בחינה</h3>
+}
+@await Html.PartialAsync("_FilterDialog", Model.FilterModel, new ViewDataDictionary(ViewData) { ["CurrentPagePath"] = Request.Path, ["SelectedExamId"] = Model.SelectedExamId })
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Attach a change event listener to the exam selection dropdown
+            $('#SelectedExamId').on('change', function () {
+                // When the dropdown value changes, submit the form
+                $('#issueLogFilterForm').submit();
+            });
+        });
+
+    </script>
+}

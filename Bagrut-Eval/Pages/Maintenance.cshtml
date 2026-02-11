@@ -1,0 +1,48 @@
+﻿@page
+@model Bagrut_Eval.Pages.MaintenanceModel
+@{
+    ViewData["Title"] = "מערכת מעקב מחוון - בגרות מדעי המחשב";
+}
+
+
+
+
+<div class="text-center">
+    <br />
+    <h2 class="display-5">מערכת בתחזוקה</h2>
+</div>
+<br />
+<br />
+<div class="login-section" style="max-width:750px;">
+    <div class="text-center">
+        <h2>המערכת עוברת שדרוג</h2>
+        <br />
+
+        <p style="font-size: 1.4rem; color: #dc3545; font-weight: bold;">
+            אנו מתנצלים על אי-הנוחות!
+        </p>
+
+        <p style="font-size: 1.4rem;">
+            המערכת נמצאת כעת במצב תחזוקה לשם שדרוג גרסה חיוני וטיפול בנתונים.
+            <br />
+        </p>
+
+        <p class="mt-4" style="font-size: 1.4rem;">
+            נחזור לפעילות מלאה בקרוב.
+        </p>
+
+        <p class="mt-3" style="font-size: 1.4rem;">
+            <small>תודה על סבלנותך!</small>
+        </p>
+
+    </div>
+</div>
+
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    @* If you had a logout success alert previously and want it back, re-add it here *@
+}
+

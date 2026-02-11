@@ -1,0 +1,115 @@
+﻿@page
+@model Bagrut_Eval.Pages.AddExamModel
+@{
+    ViewData["Title"] = "ניהול רשימת הבחינות"; // Exam Management
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<h3>
+    @(Model.NewExam != null && Model.NewExam.Id != 0 ? "עריכת בחינה קיימת" : "הוספת בחינה חדשה")
+</h3>
+<div class="examTable">
+    @* This div name is slightly confusing for a form, but keeping it as per your input *@
+    <form method="post">
+        <input type="hidden" asp-for="NewExam.Id" />
+
+        <div class="form-row">
+            @* Row for Exam Title *@
+            <div class="form-column">
+                <label asp-for="NewExam.ExamTitle">שם בחינה:</label>
+            </div>
+            <div class="form-column input-column">
+                <input asp-for="NewExam.ExamTitle" class="form-control"/>
+                <span asp-validation-for="NewExam.ExamTitle" class="text-danger"></span>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            @* Row for Active Checkbox *@
+            <div class="form-column">
+                <label asp-for="NewExam.Active">פעיל:</label>
+            </div>
+            <div class="form-column input-column">
+                <input type="checkbox" id="NewExam_Active" asp-for="NewExam.Active" />
+            </div>
+            <div class="form-column">
+                <label asp-for="NewExam.IsLocked">נעול:</label>
+            </div>
+            <div class="form-column input-column">
+                <input type="checkbox" id="NewExam_IsLocked" asp-for="NewExam.IsLocked" />
+            </div>
+        </div>
+
+        <div style="font-size:1.2em;">
+            <button type="submit" class="btn btn-primary mt-3">
+                @* Added mt-3 for some top margin *@
+                @(Model.NewExam != null && Model.NewExam.Id != 0 ? "עדכן בחינה" : "הוסף בחינה")
+            </button>
+            @if (Model.NewExam != null && Model.NewExam.Id != 0)
+            {
+                <button type="button" class="btn btn-secondary mt-3" onclick="window.location.href='/AddExam'">בטל עריכה</button>
+            }
+        </div>
+    </form>
+</div>
+
+<hr />
+
+<div class="examTable">
+    <h2>רשימת בחינות קיימות</h2>
+    @if (Model.Exams == null || !Model.Exams.Any())
+    {
+        <h2>אין בחינות להצגה</h2>
+    }
+    else
+    {
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>מספר סידורי</th>
+                    <th>שם בחינה</th>
+                    <th>פעיל</th>
+                    <th>נעול</th>
+                    <th></th> @* New: Actions column for Edit button *@
+                </tr>
+            </thead>
+            <tbody style="font-size:1.2em;">
+                @{
+                    int serialNumber = 1; // Initialize serial number
+                }
+                @foreach (var exam in Model.Exams)
+                {
+                    var rowClass = (!exam.Active || exam.IsLocked) ? "dimmed-row" : "";
+                    <tr class="@rowClass">
+                        <td>@(serialNumber++)</td>
+                        <td>@exam.ExamTitle</td>
+                        <td>@(exam.Active ? "כן" : "לא")</td>
+                        <td>@(exam.IsLocked ? "כן" : "לא")</td>
+                        <td>
+                            <a asp-page="/AddExam" asp-page-handler="Edit" asp-route-id="@exam.Id" class="btn btn-info btn-sm">ערוך</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

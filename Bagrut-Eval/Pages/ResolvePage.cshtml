@@ -1,0 +1,259 @@
+﻿@page "{issueId:int?}"
+@model Bagrut_Eval.Pages.ResolveModel
+@{
+    ViewData["Title"] = "דיון ותשובות לשאלות"; // Resolve Issue
+}
+
+<div class="container-fluid">
+    <br />
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (Model.Issue == null)
+    {
+        <p>השאלה/בעיה לא נמצאה.</p> @* Issue not found. *@
+    }
+    else
+    {
+        <hr />
+
+        @* Full description of the issue *@
+        <div class="issue-details mb-3 resolve-page">
+            <h3>
+                <span><strong>בחינה:</strong> @Model.Issue.Exam?.ExamTitle</span> @* Exam: *@
+                <span><strong>שאלה:</strong> @(Model.Issue.Part != null ? Model.Issue.Part.QuestionNumber : Model.Issue.QuestionNumber)</span> @* Question: *@
+                <span><strong>סעיף:</strong> @(Model.Issue.Part?.QuestionPart ?? " ")</span> @* Part: (General) *@
+                <span><strong>מעריך:</strong> @Model.Issue.User?.FirstName @Model.Issue.User?.LastName</span> @* Opening Evaluator: *@
+                <span><strong>תאריך פתיחה:</strong> @Model.Issue.OpenDate.ToShortDateString()</span> @* Open Date: *@
+                <span><strong>סטטוס:</strong> @Model.GetIssueStatusDisplay(Model.Issue.Status)</span>
+            </h3>
+            <br />
+            <h3>
+                <strong>תיאור:</strong> @Model.Issue.Description @* Description: *@
+            </h3>
+        </div>
+
+        @* Images section *@
+        @if (Model.Issue.Drawings != null && Model.Issue.Drawings.Any()) @* Corrected to Drawings *@
+        {
+            <h5>תמונות מצורפות:</h5> @* Attached Images: *@
+            <div class="d-flex flex-wrap mb-3">
+                @foreach (var drawing in Model.Issue.Drawings) @* Corrected to drawing *@
+                {
+                    <a href="@drawing.FilePathOrUrl" target="_blank" class="me-2 mb-2">
+                        @* Corrected to FilePathOrUrl *@
+                        <img src="@drawing.FilePathOrUrl" alt="Issue Image" style="width: 100px; height: 100px; object-fit: cover; border: 1px solid #ddd;" /> @* Corrected to FilePathOrUrl *@
+                    </a>
+                }
+            </div>
+        }
+
+        <hr />
+
+        @* Action buttons for the entire issue *@
+        <center>
+            <div class="d-flex justify-content-start mb-3 resolve-page">
+                <form method="post" asp-page-handler="UpdateClose" class="me-2">
+                    <input type="hidden" name="issueId" value="@Model.Issue.Id" />
+                    <input type="hidden" name="selectedExamId" value="@Model.SelectedExamId" />
+                    <button type="submit" class="btn btn-success">עדכן סגור</button> @* Update Close *@
+                </form>
+                <form method="post" asp-page-handler="UpdateOpen" class="me-2">
+                    <input type="hidden" name="issueId" value="@Model.Issue.Id" />
+                    <input type="hidden" name="selectedExamId" value="@Model.SelectedExamId" />
+                    <button type="submit" class="btn btn-info">עדכן פתוח</button> @* Update Open *@
+                </form>
+                <form>
+                    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#emailModal">שלח אימייל</button>
+                </form>
+                <a asp-page="/AnswerPage" asp-route-selectedExamId="@Model.SelectedExamId" class="btn btn-secondary">ביטול</a> @* Cancel *@
+            </div>
+        </center>
+
+        @* Table with existing answers *@
+        <h3>תשובות קיימות:</h3> @* Existing Answers: *@
+        @if (Model.Answers != null && Model.Answers.Any())
+        {
+            <div class="resolve-page">
+                <table class="table table-bordered table-striped mt-3">
+                    <thead>
+                        <tr>
+                            <th width="3%">#</th> @* Line number *@
+                            <th width="10%">תאריך ושעה</th> @* Date and Time *@
+                            <th width="15%">שם בכיר</th> @* Senior Full Name *@
+                            <th width="25%">תשובה</th> @* Answer *@
+                            <th width="8%">הורדה</th> @* Score *@
+                            <th width="20%">פעולות</th> @* Actions *@
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int answerLineNumber = 0;
+                        }
+                        @foreach (var answer in Model.Answers)
+                        {
+                            answerLineNumber++;
+                            <tr class="@(Model.Issue.FinalAnswerId == answer.Id ? "table-success" : "")">
+                                @* Highlight Final Answer *@
+                                <td>@answerLineNumber</td>
+                                <td>@answer.Date.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@answer.Senior?.FirstName @answer.Senior?.LastName</td>
+                                <td>
+                                    @* Allow inline editing for the current senior's own answer, or if no senior has answered this specific answer *@
+                                    @if (answer.SeniorId == Model.CurrentLoggedInUserId || answer.Id == 0)
+                                    {
+                                        <textarea id="answerContent_@answer.Id" class="form-control" rows="2">@answer.Content</textarea>
+                                    }
+                                    else
+                                    {
+                                        <span>@answer.Content</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (answer.SeniorId == Model.CurrentLoggedInUserId || answer.Id == 0)
+                                    {
+                                        <input type="text" id="answerScore_@answer.Id" class="form-control" value="@answer.Score" /> @* Corrected to type="text" *@
+                                    }
+                                    else
+                                    {
+                                        <span>@answer.Score</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (answer.SeniorId == Model.CurrentLoggedInUserId || answer.Id == 0)
+                                    {
+                                        <form method="post" asp-page-handler="UpdateAnswer" class="d-inline">
+                                            <input type="hidden" name="issueId" value="@Model.Issue.Id" />
+                                            <input type="hidden" name="answerId" value="@answer.Id" />
+                                            <input type="hidden" name="selectedExamId" value="@Model.SelectedExamId" />
+                                            <input type="hidden" name="answerContent" id="hiddenAnswerContent_@answer.Id" />
+                                            <input type="hidden" name="answerScore" id="hiddenAnswerScore_@answer.Id" />
+                                            <button type="submit" class="btn btn-sm btn-primary" onclick="setHiddenFields('@answer.Id')">עדכן</button> @* Update *@
+                                        </form>
+                                    }
+
+                                    @* Set Final Answer button/toggle *@
+                                    <form method="post" asp-page-handler="SetFinalAnswer" class="d-inline ms-2">
+                                        <input type="hidden" name="issueId" value="@Model.Issue.Id" />
+                                        <input type="hidden" name="selectedExamId" value="@Model.SelectedExamId" />
+                                        <input type="hidden" name="answerId" value="@answer.Id" />
+                                        @if (Model.Issue.FinalAnswerId == answer.Id)
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-outline-success">לא סופי</button> @* Deselect Final *@
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">קבע כסופי</button> @* Set as Final *@
+                                        }
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <h3>טרם נוספו תשובות לשאלה זו</h3> @* No answers added for this issue yet. *@
+        }
+
+        <hr />
+
+        @if (!Model.HasUserSubmittedAnswer)
+        {
+            @* Add new answer section *@
+            <h4>הוסף תשובה חדשה:</h4> @* Add New Answer: *@
+            <div class="resolve-page">
+                <form method="post" asp-page-handler="AddAnswer">
+                    <input type="hidden" name="issueId" value="@Model.Issue.Id" />
+                    <input type="hidden" name="selectedExamId" value="@Model.SelectedExamId" />
+
+                    <div class="form-group mb-3">
+                        <label for="NewAnswer.Content">תשובה:</label> @* Answer: *@
+                        <textarea asp-for="NewAnswer.Content" class="form-control" rows="3" required></textarea>
+                        <span asp-validation-for="NewAnswer.Content" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <div class="d-flex align-items-center">
+                            <label for="NewAnswer.Score" class="me-2">הורדה:</label> @* Score: *@
+                            <input type="text" asp-for="NewAnswer.Score" class="form-control" style="width:120px;margin-right:25px;" required /> @* Corrected to type="text" *@
+                        </div>
+                        <span asp-validation-for="NewAnswer.Score" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">הוסף תשובה</button> @* Add Answer *@
+                </form>
+            </div>
+        }
+        else
+        {
+            <h3>מכיון שענית לשאלה זו, באפשרותך לעדכן את תשובתך הקיימת</h3>
+        }
+    }
+</div>
+
+<div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">                              
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>                 
+                <h5 class="modal-title" id="emailModalLabel">שלח אימייל למעריכים</h5>
+            </div>
+            <form method="post" asp-page-handler="SendEmail">
+                <div class="modal-body text-right">
+                    <p>בחר מעריכים מהרשימה:</p>
+                    <div class="mb-3">
+                        @foreach (var senior in Model.ActiveSeniors)
+                        {
+                            <div class="form-check form-check-inline d-flex flex-row-reverse">
+                                <label class="form-check-label me-2" for="senior_@senior.Id">
+                                    @senior.FirstName @senior.LastName
+                                </label>
+                                <input class="form-check-input" type="checkbox" id="senior_@senior.Id"
+                                       name="SelectedSeniorIds" value="@senior.Id"
+                                       @(Model.InvolvedSeniorIds.Contains(senior.Id) ? "checked" : "")>
+                            </div>
+                        }
+                    </div>
+                    <br />
+                    <div class="mb-3">
+                        <label for="MessageContent" id="MessageLabel" class="form-label">הודעה:</label>
+                        <textarea class="form-text" id="MessageContent" name="MessageContent" rows="5" style="font-size:1.4em!important;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">בטל</button>
+                    <button type="submit" class="btn btn-primary">שלח</button>
+                </div>
+                <input type="hidden" asp-for="IssueId" />
+                <input type="hidden" asp-for="SelectedExamId" />
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function setHiddenFields(answerId) {
+            var content = document.getElementById('answerContent_' + answerId).value;
+            var score = document.getElementById('answerScore_' + answerId).value;
+            document.getElementById('hiddenAnswerContent_' + answerId).value = content;
+            document.getElementById('hiddenAnswerScore_' + answerId).value = score;
+        }
+    </script>
+}

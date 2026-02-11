@@ -1,0 +1,140 @@
+﻿@page
+@model Bagrut_Eval.Pages.Admin.StorageCleanupModel
+@inject ITimeProvider TimeProvider
+@using Bagrut_Eval.Utilities
+
+@{
+    ViewData["Title"] = "Storage Cleanup Utility";
+    var successMessage = TempData["SuccessMessage"] as string;
+    var errorMessage = TempData["ErrorMessage"] as string;
+}
+
+<h1>חיפוש קבצים אבודים - שאינם שייכים למסד הנתונים</h1>
+<h3>Container: @Model.ContainerName</h3>
+<hr />
+
+@* Displaying Status Messages *@
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success" role="alert">
+        <strong> </strong> @successMessage
+    </div>
+}
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>שגיאה!</strong> @errorMessage
+    </div>
+}
+
+@if (!Model.OrphanedBlobNames?.Any() ?? true)
+{
+    <br />
+    <form method="post" id="LoadDataForm">
+        @Html.AntiForgeryToken()
+        <button type="submit" style="margin-right:50px;"
+                asp-page-handler="LoadData"
+                class="btn btn-primary btn-lg">
+            טען נתוני קבצים
+        </button>
+    </form>
+}
+else
+{
+    @if (Model.OrphanedBlobNames!.Any())
+    {
+        <div class="all">
+            @* Summary Statistics *@
+            <div class="info">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-white bg-primary mb-3">
+                            @* <div class="card-header">Total Files in Container</div> *@
+                            <div class="card-body">
+                                <center><h5 class="card-title">מספר הקבצים הכללי: @Model.TotalBlobCount</h5></center>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-danger mb-3">
+                            @* <div class="card-header">Files for Deletion</div> *@
+                            <div class="card-body">
+                                <center><h5 class="card-title">מספר הקבצים שאינם משוייכים: @Model.TotalOrphanedCount</h5></center>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="del">
+                <form method="post" id="DeleteAllForm" action="/Admin/StorageCleanup?handler=DeleteAll">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            asp-page-handler="DeleteAll"
+                            class="btn btn-danger btn-lg mb-3"
+                            id="deleteAllButton">
+                        מחק את כל @Model.OrphanedBlobNames.Count הקבצים האבודים?
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <h3 class="mt-4">List of All Files in Container</h3>
+
+        <table class="table table-striped table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>שם הקובץ (Blob)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                }
+                @foreach (var blobName in Model.OrphanedBlobNames.OrderBy(b => b))
+                {
+                    <tr>
+                        <td>@(i++)</td>
+                        <td>@blobName</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-success" role="alert">
+            <strong>The container is clean!</strong> No Orphaned files were found in the Azure Storage container @Model.ContainerName
+        </div>
+    }
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const deleteAllButton = document.getElementById('deleteAllButton');
+            const deleteAllForm = document.getElementById('DeleteAllForm');
+
+            if (deleteAllButton && deleteAllForm) {
+                deleteAllButton.addEventListener('click', async function(e) {
+                    e.preventDefault();
+
+                    const message = 'האם אתה בטוח שברצונך למחוק את כל הקבצים ברשימה? פעולה זו היא קבועה ולא ניתנת לביטול.';
+                    const confirmed = await showCustomConfirm(message, 'אזהרת מחיקת כל הקבצים ברשימה');
+
+                    if (confirmed) {
+                        const event = new Event('submit', { cancelable: true });
+
+                        if (deleteAllForm.dispatchEvent(event)) {
+                            deleteAllForm.submit();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

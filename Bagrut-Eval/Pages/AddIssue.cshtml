@@ -1,0 +1,139 @@
+﻿@page
+@model Bagrut_Eval.Pages.AddIssueModel
+@using Bagrut_Eval.Utilities
+@{
+    ViewData["Title"] = "הוספת שאלה";
+}
+
+<div class="container" style="width:75%;">
+    <br />
+    @* Display Success/Error Messages from TempData *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @* Form for Exam Selection and Report Type Toggle *@
+    <form method="post" asp-page-handler="Filter" class="me-3">
+        @* <div class="form-group row mb-3"> *@
+        <div class="form-group d-flex align-items-center">
+            <label asp-for="SelectedExamId" class="me-3 exam-label">בחר בחינה:</label> @* class="col-sm-2 col-form-label exam-label" *@
+            <div class="col-sm-6">
+                <select asp-for="SelectedExamId" asp-items="Model.AvailableExams" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- בחר בחינה --</option> @* -- Select Exam -- *@
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <hr />
+
+    @* Display Reports based on selected Exam *@
+    @if (Model.SelectedExamId.HasValue && Model.SelectedExamId.Value > 0)
+    {
+        @* <h3>@Model.SelectedExamTitle - דיווחים @(Model.IsMyReportSelected ? "שלי" : "מלא")</h3> *@
+        <br />        
+
+        <div>
+            @* Start the form HERE, wrapping the modal-body and modal-footer *@
+            <form method="post" asp-page-handler="AddIssue" enctype="multipart/form-data">
+
+                <div>
+                    @* Hidden inputs *@
+                    <input type="hidden" asp-for="SelectedExamId" />
+
+                    <div class="form-group row mb-2">
+                        <label asp-for="SelectedIssueScope" class="col-sm-2 col-form-label">שאלה / סעיף:</label>
+                        <div class="col-sm-6">
+                            <select asp-for="SelectedIssueScope" asp-items="Model.AvailablePartsForNewIssue" class="form-control">
+                                <option value="">--  בחר שאלה / סעיף  --</option>
+                            </select>
+                            <span asp-validation-for="SelectedIssueScope" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row mb-3">
+                        <label asp-for="NewIssue.Description" class="col-sm-2 col-form-label">תיאור:</label> @* Issue Description: *@
+                        <div class="col-sm-10">
+                            <textarea asp-for="NewIssue.Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="NewIssue.Description" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    @* Drawings Input for New Issue *@
+                    <div class="form-group row mb-3">
+                        <label for="NewIssueDrawings" class="col-sm-2 col-form-label">תמונות:</label> @* Drawings: *@
+                        <div class="col-sm-10">
+                            <div class="d-flex align-items-center mb-2">
+                                @* 1. Paste Button *@
+                                <button type="button" style="font-weight:bold;"
+                                        class="btn btn-sm btn-outline-primary me-2 paste-trigger"
+                                        data-issue-id="NewIssue"
+                                        id="pasteBtn_NewIssue">
+                                    הדבק
+                                </button>
+                                @* 2. Choose Files Button *@
+                                <label for="NewIssueDrawings" class="btn btn-sm btn-outline-primary me-2 file-label" style="margin-bottom:0">
+                                    הוספת תמונה מקובץ
+                                </label>
+                            </div>
+
+                            @* Hidden input to manage the file list *@
+                            <input type="file" id="NewIssueDrawings" name="NewIssueDrawings"
+                                   class="d-none" multiple accept="image/*" />
+
+                            @* 3. Image Review/Preview Area *@
+                            <div id="previewContainer_NewIssue" class="mb-2 d-none">
+                                <h6 class="mt-2" id="previewTitle_NewIssue">תמונות להעלאה (<span id="fileCount_NewIssue">0</span>/3):</h6>
+                                <div id="previewList_NewIssue" class="d-flex flex-wrap align-items-start">
+                                    @* Image previews will be dynamically inserted here *@
+                                </div>
+                            </div>
+
+                            <small class="form-text text-muted" style="font-size:1.4rem;">ניתן לצרף עד 3 קובצי תמונות בסך הכל.</small>
+                            <span asp-validation-for="NewIssueDrawings" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                <br />
+                @* Cleaned up and Centered Submit/Cancel buttons *@
+                <div id="saveButtonDiv" class="d-flex justify-content-start mt-4">
+                    <button type="submit" id="saveButton" class="btn btn-success btn-lg me-3" >הוספה</button> @* Save Report *@
+                </div>            
+            </form>
+
+        </div>
+    }
+    else
+    {
+        <h2>אנא בחר בחינה מהרשימה כדי לצפות בדוחות.</h2> @* Please select an exam from the list to view reports. *@
+    }
+</div>
+<style>
+    #saveButton{
+        font-size:1.5rem;
+    }
+    #saveButtonDiv{
+        padding-right: 200px;
+    }
+</style>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        window.MAX_FILE_SIZE = @(Bagrut_Eval.Pages.ReportModel.maxFileSizeinMB);
+    </script>
+
+    <script src="~/js/add-issue.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36301.6
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bagrut-Eval", "Bagrut-Eval\Bagrut-Eval.csproj", "{23EFDFA3-3998-41ED-BE25-138A6E6293C3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{23EFDFA3-3998-41ED-BE25-138A6E6293C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23EFDFA3-3998-41ED-BE25-138A6E6293C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23EFDFA3-3998-41ED-BE25-138A6E6293C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23EFDFA3-3998-41ED-BE25-138A6E6293C3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {46F9A283-A167-4531-8FCE-2D957EB27B61}
+	EndGlobalSection
+EndGlobal

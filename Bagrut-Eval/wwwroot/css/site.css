@@ -1,0 +1,933 @@
+﻿/* Custom Layout for RTL and Container Styling */
+html, body {
+    height: 100%;
+    direction: rtl !important; /* Force RTL direction for the entire document */
+}
+
+body {
+    text-align: right !important; /* Force default text alignment to right for RTL */
+    margin: 0;
+    font-family: Arial, sans-serif; /* Example font, consider Hebrew-friendly fonts like Noto Sans Hebrew */
+    display: grid; /* Use CSS Grid for overall layout */
+    /* Define grid areas to achieve the *visual* layout assuming LTR column order by default,
+       but positioning elements for an RTL appearance:
+       title-area is over the main content (left column)
+       .          is the empty space over the menu (right column)
+       main-area  is the central content (left column)
+       menu-area  is the right-aligned vertical menu (right column)
+       footer-area spans the bottom
+    */
+    grid-template-areas:
+        "logo     title-area" /* Title in the left column, logo space in the right column */
+        "menu-area    main-area" /* Main content in the left column, Menu in the right column */
+        "footer-area  footer-area"; /* Footer spans both columns */
+    grid-template-rows: auto 1fr auto; /* Title and Footer height auto, Main takes remaining space (1fr) */
+    /* grid-template-columns: 250px 1fr;*/ /* 1fr for the left column (main/title), 200px for the right column (menu/empty space) */
+    grid-template-columns: 1fr 7fr; /* Creates a responsive split */
+    min-height: 100vh; /* Ensure body takes full viewport height */
+    gap: 15px; /* Add margin/gap between all grid items */
+    padding: 15px; /* Add padding to the body for margin to window edges */
+
+    box-sizing: border-box; /* Include padding in element's total width/height */
+    gap: 0px 0px; /* This sets row-gap and column-gap to 0 */
+    grid-column-gap: 10px; /* Only removes horizontal gap */
+    grid-row-gap: 10px; /* Keeps vertical gap if desired */
+}
+
+@media (max-width: 1920px) {
+    body {
+        font-size: 1.2em; /* Make font size smaller */
+    }
+
+    #footer-area {
+        padding: 5px; /* Adjust padding for a tighter layout */
+    }
+
+    #logo {
+        font-size: 1.5vw;
+    }
+
+        #logo small {
+            /*font-size: 0.8vw;*/
+            font-size: clamp(0.6rem, 0.8vw, 1.2rem); /* Add clamp() here for robustness */
+        }
+
+    h1 {
+        font-size: 2vw;
+    }
+}
+
+/* Container Styling and Mapping to Grid Areas */
+#layout-wrapper {
+    display: contents; /* Allows children to participate directly in body's grid */
+}
+
+#logo {
+    grid-area: logo;
+    text-align: center;
+    /*font-size: 2em;*/
+    font-size: clamp(1rem, 1.5vw, 2.5rem);
+    padding: 0px 5px 0px 5px;
+    border: none;
+    border-radius: 8px;
+    background-color: aquamarine; /*lightgreen;*/
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#title-area {
+    grid-area: title-area;
+    text-align: center; /* Retain for any inline text directly in title-area if applicable */
+    padding: 0px; /* This padding will surround the vertically centered content */
+    background-color: lightblue;
+    border: none;
+    border-radius: 8px;
+}
+
+#subTitle {
+    display: flex;
+    vertical-align: central !important;
+}
+
+#subTitleRight {
+    flex: 5;
+    display: flex;
+    flex-direction: column;
+    font-size: 1.3vw;
+    justify-content: center;
+    /*border:solid;
+    border-width:2px;*/
+    padding: 25px 10px !important;
+}
+
+#subTitleLeft {
+    flex: 4;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /*border: solid;*/
+    border-width: 2px;
+    padding: 0px;
+    padding: 10px !important;
+}
+
+    #subTitleLeft table {
+        /*border-style: solid;*/
+        width: 100%;
+        padding: 0;
+    }
+    /* Squeeze spacing for header elements and button in the title area */
+    #subTitleLeft h3,
+    #subTitleLeft h4 {
+        margin: 0; /* Remove default top/bottom margins */
+        padding: 0; /* Ensure no padding adds to space */
+        line-height: 1.2; /* Adjust line height if the text itself has too much internal vertical space */
+    }
+
+    #subTitleLeft h4 {
+        margin-top: 5px; /* Add a small top margin to separate from h3 */
+        font-size: 1.1em;
+    }
+
+    #subTitleLeft button.btn {
+        margin-top: 10px; /* Add a small top margin to separate the button */
+        margin-bottom: 0; /* Ensure no extra bottom margin */
+        padding-top: 5px; /* Adjust button padding if needed */
+        padding-bottom: 5px; /* Adjust button padding if needed */
+    }
+
+.header-form {
+    width: 80%; /* was 50% before work on selectRole*/
+    font-size: 1em;
+}
+
+.main-content-scroll {
+    padding: 15px; /* Apply padding here instead of directly on #main-area */
+    overflow-y: auto;
+    height: 100%;
+    flex-grow: 1;
+}
+
+#main-area {
+    grid-area: main-area;
+    /*padding: 15px;*/
+    background-color: lightyellow;
+    border: none; /* Removed solid frame */
+    border-radius: 8px; /* Round corners */
+    /*overflow-y:auto;*/ /* Allow scrolling for main content if it overflows */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#footer-area {
+    grid-area: footer-area;
+    text-align: center;
+    padding: 10px;
+    background-color: lightgray;
+    border: none;
+    border-radius: 8px; /* Round corners */
+    font-size: 1.5em;
+}
+
+.footer-dev {
+    background-color: lightcoral; /* development version color*/
+    border-radius: 8px;
+    padding: 0px;
+    margin: 0px;
+}
+
+/* Font Size Adjustments */
+#menu-area .nav-link {
+    font-size: 1.0vW;
+    padding: 0px; /*8px 15px;*/
+    padding-right: 25px;
+    display: block;
+    transition: background-color 0.3s, color 0.3s; /* Smooth transition for hover effect */
+    font-weight: bold;
+    text-align: right;
+}
+
+#menu-area .nav.flex-column {
+    padding-right: 0 !important; /* Remove default Bootstrap padding for RTL */
+    padding-left: 0 !important; /* Ensure no padding on the left */
+    margin-right: 0 !important; /* Remove any potential default margin */
+    margin-left: 0 !important; /* Remove any potential default margin */
+}
+
+#menu-area .nav-item {
+    padding: 0 !important; /* Remove any default padding from list items */
+    margin: 0 !important; /* Remove any default margin from list items */
+}
+
+#menu-area {
+    grid-area: menu-area;
+    padding-top: 30px;
+    padding-right: 0px;
+    background-color: lightblue;
+    border: none; /* Removed solid frame */
+    border-radius: 8px; /* Round corners */
+    text-align: right;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+    #menu-area nav {
+        display: flex; /* Make the <nav> element a Flex container */
+        flex-direction: column; /* Arrange its children vertically */
+        height: 100%; /* IMPORTANT: Make <nav> fill the entire height of #menu-area */
+        /* You might want to move padding/background from #menu-area to this nav if it should be inside the flex content */
+        padding: 0; /* Reset padding if necessary to avoid double padding with its parent */
+        margin: 0; /* Reset margin if necessary */
+    }
+
+#menu-top {
+    flex: 1;
+    background-color: transparent;
+    /*padding: 10px;*/
+}
+
+#menu-center {
+    flex: 9;
+    background-color: transparent;
+    /*padding: 10px;*/
+}
+
+#menu-bottom {
+    flex: 4;
+    background-color: transparent;
+    /*padding: 10px;*/
+}
+#menu-bottom form.nav-item {
+    text-align: right; /* force RTL alignment */
+}
+
+#menu-bottom form.nav-item .nav-link {
+    display: inline-block; /* behave like <a> */
+}
+
+
+
+/* Ensure table text aligns right for RTL */
+table {
+    font-size: 1.1em; /* Increase font size for the entire table */
+    text-align: right !important; /* Force table text alignment to right */
+    direction: rtl !important; /* Force table direction to RTL */
+}
+
+    table th, table td {
+        /*font-size: 1.2em;*/ /* Ensure table cells inherit or are adjusted accordingly */
+        text-align: right !important; /* Force cell text alignment to right */
+        direction: rtl !important; /* Force cell direction to RTL */
+    }
+
+    table td {
+        font-size: 1.1em;
+    }
+/*****************************************************************************************/
+/* Ensure content in table cells is vertically centered */
+.table td, .table th {
+    vertical-align: middle;
+}
+
+/* Reduce vertical padding/height of small form controls within tables */
+.table .form-control.form-control-sm {
+    /* You can adjust these values, but Bootstrap's defaults for -sm are usually good */
+    /* height: calc(1.5em + .5rem);  Example value, depends on Bootstrap version */
+    padding-top: .25rem;
+    padding-bottom: .25rem;
+    line-height: 1.5; /* Ensure consistent line height */
+}
+
+/* Ensure small buttons inside tables also have minimal vertical footprint */
+.table .btn.btn-sm {
+    padding: .25rem .5rem; /* Standard small button padding */
+}
+
+/* Target the d-flex form specifically within table cells if still experiencing issues */
+.table td .d-flex.align-items-center {
+    margin-top: 0;
+    margin-bottom: 0;
+    /* You might even set a small fixed height here if necessary, but be careful */
+    /* min-height: 30px; */
+}
+
+/* Adjust badge display for minimal height if needed */
+.table .badge {
+    display: inline-block; /* Ensure it respects line-height */
+    padding: .35em .65em; /* Standard badge padding */
+    font-size: medium;
+    font-weight: normal;
+}
+
+/* Styling for tables within the .table-section specifically for AddPart page */
+.table-section .table th,
+.table-section .table td {
+    font-size: 1.2em; /* Adjust this value as desired, e.g., 1.1em for a slight increase */
+}
+
+/****************  Removed for Users table ***************/
+
+/* Specific styles for the UsersPage table, applied to the custom class */
+.user-table-compact th,
+.user-table-compact td {
+    padding: 0rem 0rem 0rem !important; /* Significantly reduced vertical padding with !important */
+    vertical-align: middle !important; /* Ensure content is vertically centered */
+    line-height: 1 !important; /* Control line height to prevent extra space */
+    font-size: 1.2em; /* Slightly reduce font size for compactness if desired */
+}
+
+    /* Adjust form controls within the compact table cells */
+    .user-table-compact td select.form-control,
+    .user-table-compact td input.form-control {
+        height: auto !important; /* Allow height to adjust based on content */
+        padding: 0.5rem 0rem 0rem !important; /* Reduced padding for input/select elements */
+        font-size: 0.9em !important; /* Smaller font size for controls */
+        line-height: 1 !important;
+    }
+
+    /* Adjust buttons within the compact table cells */
+    .user-table-compact td .btn {
+        padding: 0.2rem 0.5rem !important; /* Reduced padding for buttons */
+        font-size: 1em !important; /* Smaller font size for buttons */
+        line-height: 1 !important;
+    }
+/*****************************************************************************************/
+/* Styling for the Report Page table (both general and myReport sections) */
+/* Ensure all cell content has a consistent baseline font size */
+.report-table.table th,
+.report-table.table td {
+    font-size: 1.2rem; /* Base font size for all cells */
+    padding-top: 0.2rem; /* Reduced vertical padding to shorten row height */
+    padding-bottom: 0.2rem;
+    vertical-align: middle; /* Ensure content is vertically centered */
+}
+
+    /* Ensure the form containing input/button doesn't add extra space */
+    .report-table.table td form {
+        margin: 0; /* Remove default form margins */
+        padding: 0; /* Remove default form padding */
+        height: 100%; /* Ensure form takes full height of the table cell */
+    }
+
+        /* Styling for the input field within the 'Issue Description' column */
+        .report-table.table td form .form-control[type="text"] {
+            font-size: 1.2rem !important; /* Force this font size to override Bootstrap's smaller default */
+            padding: 0.2rem 0.5rem; /* Adjust padding to reduce input height and maintain consistency */
+            height: auto; /* Allow height to adjust automatically */
+            line-height: 1.2; /* Explicitly set line height for consistency */
+            flex-grow: 1; /* Allow input to grow and take available space */
+        }
+
+        /* Styling for the 'Update' button within the 'Issue Description' column */
+        .report-table.table td form .btn {
+            font-size: 1.1rem !important; /* Force this font size to override Bootstrap's smaller default */
+            padding: 0.2rem 0.5rem; /* Adjust padding to reduce button height and maintain consistency */
+            line-height: 1.2; /* Explicitly set line height for consistency */
+            flex-shrink: 0; /* Prevent button from shrinking */
+        }
+/*****************************************************************************************/
+/* Answer Page - Table Styling */
+.answer-table.table {
+    table-layout: fixed; /* Ensures column widths are respected */
+    width: 100%; /* Makes the table span the full width of its parent container */
+}
+
+.answer-table tr,
+.answer-table td {
+    height: 10px;
+}
+
+.answer-table.table th,
+.answer-table.table td {
+    vertical-align: middle; /* Vertically align content in the middle of cells */
+    padding-top: 0.3rem; /* Compact vertical padding for shorter rows */
+    padding-bottom: 0.3rem;
+    word-wrap: break-word; /* Allows long words to break and wrap to the next line */
+    overflow-wrap: break-word; /* Modern equivalent for word-wrap */
+    font-size: 1.1rem; /* Base font size for regular td content */
+}
+
+    /* Specific Font Sizes for elements within table cells */
+
+    /* Font size for the textarea in the "Answer" column */
+    .answer-table.table td textarea.form-control {
+        width: 100%; /* Make textarea fill the width of its cell */
+        font-size: 1.1rem; /* Adjustable font size for textarea content */
+    }
+
+.answer-table .form-control {
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+/* Font size for the label next to the checkbox (e.g., "פתוח" / "סגור") */
+.answer-table.table td .form-check-label {
+    font-size: 1.1rem; /* Adjustable font size for checkbox label */
+}
+
+/* Font size for the buttons (e.g., "עדכן", "פתח מחדש") */
+.answer-table.table td .btn {
+    white-space: nowrap; /* Prevent button text from wrapping */
+    font-size: 0.9rem; /* Adjustable font size for button text */
+    padding: 0.2rem 0.4rem; /* Smaller padding for more compact buttons */
+}
+
+/* Updated styling for the Status switch to prevent overlap */
+.answer-table.table td .form-check {
+    display: flex;
+    align-items: center; /* Vertically align switch and label */
+    /* Removed justify-content: center; to prevent horizontal centering and overlap */
+    height: 100%; /* Helps align content within the cell */
+    margin: 0; /* Remove default margins */
+}
+
+.answer-table.table td .form-check-input {
+    /* Adjusted margin for checkbox for proper spacing in RTL */
+    margin-right: 0; /* Remove default right margin from Bootstrap */
+    margin-left: 0.5rem; /* Add margin to the left for spacing in RTL */
+}
+
+
+/*****************************************************************************************/
+
+/* Menu Hover Effect */
+#menu-area .nav-link:hover {
+    background-color: lemonchiffon; /* White background on hover */
+    color: red; /* #1b6ec2 !important;*/ /* Reversed font color (e.g., Bootstrap primary blue) */
+    text-decoration: none; /* Remove underline if any */
+}
+
+/* Bootstrap Overrides for RTL and Layout */
+/* These rules might need !important if other Bootstrap rules are more specific */
+.navbar-brand {
+    margin-right: 0 !important; /* Remove default left margin */
+    margin-left: auto !important; /* Push to the left, keeping text right-aligned */
+}
+
+.navbar-nav {
+    flex-direction: column !important; /* Ensure vertical menu if this was part of Bootstrap's original nav */
+    margin-right: auto !important; /* Push menu to the right within its flex container */
+    margin-left: 0 !important; /* Remove default left margin */
+}
+
+.nav-item-head {
+    text-align: right;
+    padding-right: 0px;
+    color: darkblue;
+    font-size: 1.2em;
+}
+
+/* Remove default Bootstrap padding on the main content area */
+main[role="main"].pb-3 {
+    padding-bottom: 0 !important;
+}
+
+/* General Link Color (optional, if you want specific link color) */
+a {
+    color: #0077cc;
+}
+
+/* Remove default footer positioning, as grid handles it now */
+.footer {
+    position: static !important; /* Override absolute positioning */
+    width: auto !important; /* Override fixed width */
+    white-space: normal !important;
+    line-height: normal !important; /* Reset line height if needed */
+}
+
+/* Ensure original Bootstrap navbar is not visible as we have a custom menu area */
+header .navbar {
+    display: none !important; /* Hide the default Bootstrap navbar */
+}
+
+.english {
+    direction: ltr;
+    text-align: left;
+    font-size: 2em;
+    padding-left: 25px;
+}
+
+.hebrew {
+    direction: rtl;
+    text-align: right;
+    font-size: 2em;
+    padding-right: 25px;
+}
+
+/* Login Section */
+
+.login-section {
+    max-width: 600px;
+    margin: 30px auto; /* Center the form */
+    padding: 5px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+    .login-section h2, .login-section h4 {
+        text-align: center; /* Center headings within the form */
+        margin-bottom: 25px;
+        color: #333;
+    }
+
+    .login-section input,
+    .login-section label {
+        font-size: 1.1em;
+    }
+
+.form-group {
+    font-size: 1.2em;
+}
+
+    .form-group select option {
+        font-size: 1em;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+.form-check {
+    float: right;
+}
+
+.form-control {
+    width: 100%;
+    height: 2; /*35px;*/
+    padding: 5px;
+    margin-bottom: 15px; /* Space between inputs */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding in width */
+    font-size: larger;
+    background: transparent;
+}
+
+.text-danger {
+    color: red;
+    font-size: 0.8em;
+    margin-top: -10px; /* Adjust spacing for validation messages */
+    margin-bottom: 10px;
+    display: block;
+}
+
+.btn {
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.mode-selection button {
+    min-width: 150px; /* Give buttons a consistent size */
+    margin-bottom: 10px; /* Space between buttons if they wrap */
+}
+
+.user-info-display {
+    border: 1px solid #ccc;
+    background-color: #e9e9e9;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 200px; /* Pushes it down in the container */
+    text-align: center;
+}
+
+    .user-info-display p {
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+    }
+
+.validation-summary-errors {
+    font-size: 1.2em; /* Larger for the main summary */
+    font-weight: bold;
+}
+
+.form-label {
+    font-size: 1.4em; /* Larger for form labels */
+    font-weight: bold;
+    display: block; /* Ensure labels are block elements */
+    margin-bottom: 5px; /* Space between label and input */
+}
+
+.alert, .text-danger {
+    font-size: 1.2em;
+    font-weight: bold;
+    width: 90%;
+}
+
+.examTable {
+    width: 600px;
+}
+
+    .examTable input {
+        background: white;
+    }
+/* Styling for the AddExam form to make it table-like */
+.form-row {
+    display: flex; /* Use flexbox for horizontal alignment */
+    align-items: center; /* Vertically align items in the row */
+    margin-bottom: 15px; /* Space between rows */
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+}
+
+.form-column {
+    /* Define widths or flex-grow for your columns */
+    flex: 0 0 150px; /* Fixed width for labels, adjust as needed */
+    padding-left: 10px; /* Space between label and input */
+    text-align: right; /* Align labels to the right for RTL */
+    font-size: 1.2em;
+}
+
+    .form-column label {
+        font-weight: bold;
+    }
+
+    .form-column.input-column {
+        flex-grow: 1; /* Allow input column to take remaining space */
+        padding-left: 0; /* Remove left padding for input columns */
+    }
+
+    .form-column .form-control {
+        width: 100%; /* Make input fields take full width of their column */
+    }
+
+    .form-column .text-danger {
+        margin-top: 5px; /* Adjust margin for validation messages */
+        text-align: right; /* Align validation messages to the right */
+    }
+
+    /* Specific styling for the checkbox alignment */
+    .form-column input[type="checkbox"] {
+        width: auto; /* Checkbox doesn't need 100% width */
+        margin-right: 0; /* Adjust margin if needed for RTL */
+        vertical-align: middle; /* Align checkbox with text */
+    }
+
+/* Styling for the checkbox in the AddExam form */
+.form-row input[type="checkbox"] {
+    transform: scale(1.5); /* Scales the checkbox to 1.5 times its original size */
+    margin: 0 5px; /* Adjust margin as needed after scaling */
+    vertical-align: middle; /* Keep it aligned with text */
+}
+
+/* Add these styles to your wwwroot/css/site.css */
+
+/* General form row layout (already there, just for context) */
+.form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+}
+
+/* Base column style (already there, just for context) */
+.form-column {
+    padding-left: 10px;
+    text-align: right;
+    /* You might want a default flex-basis here, e.g., flex: 0 0 auto; */
+}
+
+    /* Specific styling for compact columns to fit multiple on one line */
+    .form-column.compact-column {
+        flex: 0 0 180px; /* Adjust this width as needed. Gives each field a fixed width */
+        /* Or use flex-grow if you want them to share space */
+        /* flex-grow: 1; */
+        margin-right: 20px; /* Space between columns */
+        margin-bottom: 15px; /* Add some vertical spacing if they wrap */
+    }
+
+        .form-column.compact-column label {
+            display: block; /* Make label take its own line above the input */
+            margin-bottom: 5px; /* Space between label and input */
+            font-weight: bold;
+        }
+
+        .form-column.compact-column .form-control {
+            width: calc(100% - 10px); /* Adjust input width within its column, considering padding */
+        }
+
+        /* Adjust validation message placement if labels are block */
+        .form-column.compact-column .text-danger {
+            margin-top: 2px;
+            margin-bottom: 0;
+            text-align: right;
+        }
+
+/* Ensure buttons have enough top margin to separate from the combined row */
+.btn.mt-3 {
+    /*margin-top: 1.5rem !important; */ /* Increased margin for better separation */
+}
+
+#addUserForm {
+    width: 80%;
+}
+/* Target checkboxes specifically within the Allowed Exams card */
+.card-body .form-check {
+    display: flex; /* Make the container a flex item */
+    /*flex-direction: row-reverse; /* Reverse the order of its children (input and label) */
+    flex-flow: row;
+    align-items: center; /* Vertically center them */
+    justify-content: flex-end; /* Align items to the end (right side for RTL) */
+}
+
+    /* Add some margin to the left of the checkbox to separate it from the label */
+    .card-body .form-check .form-check-input {
+        margin-left: 1rem; /* Adjust as needed */
+        margin-right: 0; /* Override Bootstrap's default right margin for LTR */
+    }
+
+    /* Ensure the label also has appropriate spacing if needed */
+    .card-body .form-check .form-check-label {
+        /* You might not need to add anything here, but keep in mind for future adjustments */
+    }
+
+/* Target checkboxes specifically within the editExamsModal */
+#editExamsModal .modal-body #examCheckboxesContainer {
+    display: flex; /* Make the container a flex container */
+    flex-direction: column; /* Arrange items in a single column */
+    /* Remove any width constraints that might be causing wrapping */
+    width: 100%; /* Ensure it takes full available width */
+}
+
+#editExamsModal .modal-body .modal-form-check-rtl { /* Use the new class we added in JS */
+    display: flex;
+    flex-direction: row-reverse; /* This is key for checkbox on the right in RTL */
+    align-items: center;
+    justify-content: flex-end; /* Align items to the right */
+    margin-bottom: 0.5rem; /* Add some spacing between checkboxes */
+    width: 100%;
+}
+
+    #editExamsModal .modal-body .modal-form-check-rtl .form-check-input {
+        margin-left: 1rem; /* Space between label and checkbox */
+        margin-right: 0; /* Reset default Bootstrap margin */
+    }
+
+    #editExamsModal .modal-body .modal-form-check-rtl .form-check-label {
+        /* No specific changes needed here unless you want to adjust font size etc. */
+    }
+
+.modal-body {
+    direction: rtl;
+    background-color: beige;
+}
+
+    .modal-body input {
+        background-color: white;
+    }
+
+    .modal-body .form-control {
+        height: 35px;
+    }
+
+.user-table-compact .form-control-sm {
+    height: calc(1.8125rem + 2px); /* Adjust height for small form controls if needed */
+    padding: 0.25rem 0.5rem;
+    font-size: 0.775rem;
+    line-height: 1.2;
+    border-radius: 0.2rem;
+}
+
+.user-table-compact .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.775rem;
+    line-height: 1.2;
+    border-radius: 0.2rem;
+}
+
+.resolve-page h3 {
+    display: flex; /* Makes the <h3> a flex container */
+    flex-wrap: wrap; /* Allows items to wrap to the next line if space runs out */
+    gap: 40px; /* Adds 20px space between each direct child (your spans) */
+}
+
+.resolve-page form button,
+.resolve-page a.btn {
+    font-size: 1em;
+    margin-right: 50px;
+    padding: 5px;
+}
+
+.resolve-page form .form-control {
+    background: white;
+    width: 75%;
+    height: 35px;
+    min-height: 0;
+}
+
+form .btn {
+    font-size: 1.2em;
+}
+
+.resolve-page table tr {
+    height: 0px;
+}
+
+.resolve-page .table td {
+    padding: 5px;
+    ;
+}
+
+.form-control {
+    font-size: 1.2em;
+    height: calc(1.5em + .75rem + 2px);
+}
+
+#email.form-control,
+#password.form-control {
+    height: 1.5em;
+}
+
+#NewIssueDrawings {
+    height: 50px;
+}
+
+.exam-label {
+    min-width: 150px;
+}
+
+.export-checkbox {
+    transform: scale(1.5); /* Scales the checkbox to 1.5 times its original size */
+    margin: 0 5px; /* Adjust margin as needed after scaling */
+    vertical-align: middle; /* Keep it aligned with text */
+}
+
+#filterSortModalLabel {
+    direction: rtl;
+}
+
+#filterSortForm .form-check-input[type="checkbox"] {
+    transform: scale(1.5);
+    margin: 0 5px; /* Adjust margin as needed after scaling */
+    vertical-align: middle; /* Keep it aligned with text */
+}
+
+#filterSortForm .form-check-label {
+    padding-left: 15px;
+    vertical-align: middle;
+}
+
+.modal-footer button {
+    font-size: 1em;
+}
+
+.filter-button {
+    font-size: 1.2em !important;
+    margin-right: 40px;
+    margin-bottom: 15px;
+}
+
+.form-control-md {
+    height: calc(1.5em + 1.25rem + 0px); /* A height between sm and default */
+    padding: 0rem 0.75rem 0rem; /* Padding between sm and default */
+    font-size: 1.2rem; /* A font size between sm and default */
+    border-radius: 0.3rem; /* A border radius between sm and default */
+    margin-bottom: 0px !important;
+    direction: rtl;
+}
+
+td .btn-info,
+td .btn-danger,
+.btn-primary,
+form .btn-primary {
+    font-size: 1em;
+}
+
+#emailModal .me-2 {
+    margin-right: 2rem !important;
+}
+
+#emailModal .text-right {
+    padding-bottom: 0px;
+}
+
+#MessageContent {
+    width: 100%;
+}
+
+#MessageLabel {
+    margin-top: 75px;
+    margin-bottom: 5px;
+}
+
+.modal-header {
+    justify-content: inherit;
+}
+
+    .modal-header .btn-close {
+        direction: rtl !important;
+        margin-left: 0px;
+    }
+
+table .flex-wrap {
+    margin: 0px;
+}
+
+th a {
+    text-decoration: none;
+}
+
+.drawing-item {
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.dimmed-row {
+    color: #999; /* Light gray color */
+    background-color: #f7f7f7; /* Very slight background change for contrast */
+}
+
+/* Fix for the Main Page Title (ViewData["Title"]) */
+#subTitle #subTitleRight h1 {
+    /* clamp(MIN_SIZE, FLUID_SIZE_VW, MAX_SIZE) */
+    font-size: clamp(1.5rem, 2vw, 2.5rem) !important; /* Use !important as a last resort safeguard */
+    margin: 0; 
+    /* Add any other required styles here */
+}

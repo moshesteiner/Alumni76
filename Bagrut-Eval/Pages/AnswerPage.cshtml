@@ -1,0 +1,281 @@
+﻿@page
+@model Bagrut_Eval.Pages.AnswerPageModel
+@using Bagrut_Eval.Utilities
+@{
+    ViewData["Title"] = "סטטוס בעיות ושאלות";
+}
+
+<div class="container-fluid">
+    <br />
+    @* Display Success/Error Messages from TempData *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @* Form for Exam Selection *@
+    <div class="d-flex align-items-center mb-3">
+        <form method="post" asp-page-handler="Filter" class="me-3">
+            <div class="form-group d-flex align-items-center">
+                <label asp-for="SelectedExamId" class="me-3 exam-label">בחר בחינה:</label>
+                <select asp-for="SelectedExamId" asp-items="Model.AvailableExams" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- בחר בחינה --</option>
+                </select>
+            </div>
+        </form>
+        @* &nbsp;&nbsp;&nbsp; *@
+        @if (Model.SelectedExamId.HasValue && Model.SelectedExamId.Value > 0)
+        {
+            <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">
+                סינון
+            </button>
+
+            <form method="post" asp-page-handler="ResetSort" class="d-inline">
+                <input type="hidden" name="selectedExamId" value="@Model.SelectedExamId" />
+                <button type="submit" class="btn btn-primary filter-button">איפוס מיון וסינון</button> @*class="btn btn-warning btn-sm"*@
+            </form>
+        }
+    </div>
+    <hr />
+
+    @* Display Issues based on selected Exam *@
+    @if (Model.SelectedExamId.HasValue && Model.SelectedExamId.Value > 0)
+    {
+        <br />
+        @if (Model.Issues != null && Model.Issues.Any())
+        {
+            // Retrieve sort state from ViewData
+            var sortState = (List<string>)(ViewData["SortState"])!;
+            Func<string, string> getSortDir = colName =>
+            {
+                if (sortState == null || !sortState.Any()) return "asc";
+                if (sortState.First().StartsWith(colName)) return sortState.First().EndsWith("_asc") ? "desc" : "asc";
+                return "asc";
+            };
+            Func<string, string> getSortDirIcon = colName =>
+            {
+                if (sortState == null || !sortState.Any() || !sortState.First().StartsWith(colName)) return "";
+                return sortState.First().EndsWith("_asc") ? "up" : "down";
+            };
+
+            <table class="table table-bordered table-striped mt-3 answer-table">
+                <thead>
+                    <tr>
+                        <th width="3%">#</th> @* line number *@
+                        <th width="7%">
+                            <a asp-page="AnswerPage"
+                               asp-route-selectedExamId="@Model.SelectedExamId"
+                               asp-route-sort="QuestionNumber"
+                               asp-route-secondarySort="Part.QuestionPart"
+                               asp-route-dir="@getSortDir("QuestionNumber")"
+                               asp-route-FilterSortModel.ShowClosed="@Model.FilterModel!.ShowClosed"
+                               asp-route-FilterSortModel.ShowNewerThanLastLogin="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.DescriptionSearchTerm="@Model.FilterModel.DescriptionSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.UserNameSearch">
+                                סעיף
+                                @if (getSortDirIcon("QuestionNumber") != "")
+                                {
+                                    <i class="bi bi-arrow-@getSortDirIcon("QuestionNumber")"></i>
+                                }
+                            </a>
+                        </th>
+                        <th width="25%">תיאור הבעיה</th>
+                        <th width="10%">תמונות</th>
+                        <th width="10%">
+                            <a asp-page="AnswerPage"
+                               asp-route-selectedExamId="@Model.SelectedExamId"
+                               asp-route-sort="OpenDate"
+                               asp-route-dir="@getSortDir("OpenDate")"
+                               asp-route-FilterSortModel.ShowClosed="@Model.FilterModel.ShowClosed"
+                               asp-route-FilterSortModel.ShowNewerThanLastLogin="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.DescriptionSearchTerm="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.DescriptionSearch">
+                                תאריך
+                                @if (getSortDirIcon("OpenDate") != "")
+                                {
+                                    <i class="bi bi-arrow-@getSortDirIcon("OpenDate")"></i>
+                                }
+                            </a>
+                        </th>
+                        <th width="7%">
+                            @* שם המעריך *@
+                            <a asp-page="AnswerPage"
+                               asp-route-selectedExamId="@Model.SelectedExamId"
+                               asp-route-sort="User.FirstName"
+                               asp-route-secondarySort="User.LastName"
+                               asp-route-dir="@getSortDir("User.FirstName")"
+                               asp-route-FilterSortModel.ShowClosed="@Model.FilterModel.ShowClosed"
+                               asp-route-FilterSortModel.ShowNewerThanLastLogin="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.DescriptionSearchTerm="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.DescriptionSearch">
+                                שם המעריך
+                                @if (getSortDirIcon("User.FirstName") != "")
+                                {
+                                    <i class="bi bi-arrow-@getSortDirIcon("User.FirstName")"></i>
+                                }
+                            </a>
+                        </th>
+                        <th width="20%">תשובה</th>
+                        <th width="5%">ציון</th>
+                        <th width="7%">
+                            @* שם בכיר *@
+                            <a asp-page="AnswerPage"
+                               asp-route-selectedExamId="@Model.SelectedExamId"
+                               asp-route-sort="FinalAnswer.Senior.FirstName"
+                               asp-route-secondarySort="FinalAnswer.Senior.LastName"
+                               asp-route-dir="@getSortDir("FinalAnswer.Senior.FirstName")"
+                               asp-route-FilterSortModel.ShowClosed="@Model.FilterModel.ShowClosed"
+                               asp-route-FilterSortModel.ShowNewerThanLastLogin="@Model.FilterModel.ShowNewerThanLastLogin"
+                               asp-route-FilterSortModel.DescriptionSearchTerm="@Model.FilterModel.DescriptionSearch"
+                               asp-route-FilterSortModel.UserNameSearchTerm="@Model.FilterModel.UserNameSearch">
+                                שם בכיר
+                                @if (getSortDirIcon("FinalAnswer.Senior.FirstName") != "")
+                                {
+                                    <i class="bi bi-arrow-@getSortDirIcon("FinalAnswer.Senior.FirstName")"></i>
+                                }
+                            </a>
+                        </th>
+
+                        <th width="5%">סטטוס</th>
+                        <th width="8%">פעולה</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int lineNumber = 0;
+                    }
+                    @foreach (var issue in Model.Issues)
+                    {
+                        lineNumber++;
+                        <tr>
+                            <td>@lineNumber</td>
+                            @{
+                                var question = issue.Part != null ? issue.Part.QuestionNumber : issue.QuestionNumber;
+                                if (question != "" && issue.Part?.QuestionPart != "")
+                                {
+                                    question += issue.Part?.QuestionPart;
+                                }
+                            }
+                            <td>@question</td>
+                            <td>@issue.Description</td>
+                            @* <td>@(issue.Drawings != null && issue.Drawings.Any() ? "כן" : "לא")</td> *@ @* Corrected to Drawings *@
+                            <td style="padding-top: 0px; padding-bottom: 0px; vertical-align: middle;">
+                                @if (issue.Drawings != null && issue.Drawings.Any())
+                                {
+                                    <div class="mt-3">
+                                        <div class="d-flex flex-wrap">
+                                            @foreach (var drawing in issue.Drawings)
+                                            {
+                                                <div class="drawing-item me-2 mb-2">
+                                                    <a href="@drawing.FilePathOrUrl"
+                                                       target="_blank">
+                                                        <img src="@drawing.FilePathOrUrl" alt="@drawing.OriginalFileName" class="img-thumbnail" style="max-width: 50px; max-height: 50px;" />
+                                                    </a>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+
+                                else
+                                {
+                                    <span>אין</span> @* None *@
+                                }
+                            </td>
+                            <td>@TimeConverter.ConvertUtcToIsraelTime(issue.OpenDate).ToString("dd/MM/yy-HH:mm")</td>                           
+                            <td>
+                                @issue.User?.FirstName @issue.User?.LastName
+                                @* <small>@issue.OpenDate.ToShortDateString()</small>  *@
+                            </td>
+                            <td>
+                                @if (issue.Status == IssueStatus.Closed)
+                                {
+                                    @issue.FinalAnswer?.Content
+                                }
+                            </td>
+                            <td>
+                                @if (issue.Status == IssueStatus.Closed)
+                                {
+                                    @issue.FinalAnswer?.Score
+                                }
+                            </td>
+                            <td>
+                                @if (issue.Status == IssueStatus.Closed)
+                                {
+                                    <span style="line-height: 0.7; padding:0;">
+                                        @issue.FinalAnswer?.Senior?.FirstName
+                                        <span> </span>
+                                        @issue.FinalAnswer?.Senior?.LastName
+                                        <br />
+                                        <small style="font-size: 0.8em;">
+                                            @(issue.FinalAnswer != null ? 
+                                            @TimeConverter.ConvertUtcToIsraelTime(issue.FinalAnswer.Date).ToString("dd/MM/yy-HH:mm") : "")
+                                        </small>
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @*@(issue.Status == IssueStatus.Open ? "פתוח" : "סגור")*@
+                                @Html.Raw(Model.GetIssueStatusTag(issue.Status))
+                            </td>
+                            <td>
+                                @{
+                                    var openText = "";
+                                    if (issue.Status == IssueStatus.Open)
+                                    {
+                                        openText = "פתח לטיפול";
+                                    }
+                                    if (issue.Status == IssueStatus.InProgress)
+                                    {
+                                        openText = "פתח";
+                                    }
+                                }
+                                @if (issue.Status != IssueStatus.Closed)  @*assumes that IssueStatus.Resolved is not in use, so only Open nd InProgress*@
+                                {
+                                    <a asp-page="/ResolvePage" asp-route-issueId="@issue.Id" asp-route-selectedExamId="@Model.SelectedExamId" class="btn btn-primary btn-sm">@openText</a> @* Open for Treatment *@
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="ReopenIssue" class="d-inline">
+                                        <input type="hidden" name="issueId" value="@issue.Id" />
+                                        <input type="hidden" name="selectedExamId" value="@Model.SelectedExamId" />
+                                        <button type="submit" class="btn btn-warning btn-sm">פתח מחדש</button> @* Re-open *@
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>אין נושאים רשומים לבחינה זו</p>
+        }
+    }
+    else
+    {
+        <h2>נא לבחור בחינה</h2>
+    }
+</div>
+<style>
+    td{
+        padding:0px;
+        margin:0px;
+    }
+</style>
+@await Html.PartialAsync("_FilterDialog", Model.FilterModel, new ViewDataDictionary(ViewData) { ["SelectedExamId"] = Model.SelectedExamId })
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

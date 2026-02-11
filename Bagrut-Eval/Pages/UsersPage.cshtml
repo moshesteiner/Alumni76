@@ -1,0 +1,614 @@
+﻿@page
+@model UsersPageModel
+@using Bagrut_Eval.Utilities
+@{
+    ViewData["Title"] = "ניהול מעריכים"; @* User Management *@
+}
+
+<div class="full-width-content">
+    @* Display Success/Error Messages from TempData *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @Html.Raw(TempData["SuccessMessage"]) @* Used Html.Raw to render bold tag for password *@
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+    <div class="main-container">
+        <div class="buttunBox">
+            <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">
+                סינון
+            </button>
+        </div>
+        <div class="userTable">
+            @if (Model.DisplayUsers != null && Model.DisplayUsers.Any())
+            {
+                var sortState = (List<string>)(ViewData["SortState"])!;               
+                Func<string, string> getSortDir = colName =>
+                {
+                    // If we are currently sorting by this column, toggle the direction
+                    if (sortState != null && sortState.Any() && sortState.First().StartsWith(colName))
+                    {
+                        return sortState.First().EndsWith("_asc") ? "desc" : "asc";
+                    }
+                    // If it's LastLogin, the first click should be 'desc'
+                    return (colName == "LastLogin") ? "desc" : "asc";
+                };
+                Func<string, string> getSortDirIcon = colName =>
+                {
+                    if (sortState == null || !sortState.Any() || !sortState.First().StartsWith(colName)) return "";
+                    return sortState.First().EndsWith("_asc") ? "up" : "down";
+                };
+
+                <table class="table table-bordered table-striped mt-3 user-table-compact">
+                    <thead>
+                        <tr>
+                            <th>#</th> @* Line Number *@
+                            <th>
+                                <a asp-page="UsersPage"
+                                   asp-route-sort="FirstName"
+                                   asp-route-secondarySort="LastName"
+                                   asp-route-dir="@getSortDir("FirstName")"
+                                   asp-route-FilterModel.UserNameSearch="@Model.FilterModel!.UserNameSearch">
+                                    שם פרטי
+                                    @if (getSortDirIcon("FirstName") != "")
+                                    {
+                                        <i class="bi bi-arrow-@getSortDirIcon("FirstName")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a asp-page="UsersPage"
+                                   asp-route-sort="LastName"
+                                   asp-route-secondarySort="FirstName"
+                                   asp-route-dir="@getSortDir("LastName")"
+                                   asp-route-FilterModel.UserNameSearch="@Model.FilterModel.UserNameSearch">
+                                    שם משפחה
+                                    @if (getSortDirIcon("LastName") != "")
+                                    {
+                                        <i class="bi bi-arrow-@getSortDirIcon("LastName")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>אימייל</th>
+                            <th>טלפון</th>
+                            @{
+                                if (Model.IsSpecialAdmin)
+                                {
+                                    <th>מקצוע</th>
+                                }
+                            }
+                            @if (!Model.IsSpecialAdmin)
+                            {
+                                <th>
+                                    <a asp-page="UsersPage"
+                                       asp-route-sort="Role"
+                                       asp-route-dir="@getSortDir("Role")"
+                                       asp-route-FilterModel.UserNameSearch="@Model.FilterModel.UserNameSearch">
+                                        תפקיד
+                                        @if (getSortDirIcon("Role") != "")
+                                        {
+                                            <i class="bi bi-arrow-@getSortDirIcon("Role")"></i>
+                                        }
+                                    </a>
+                                </th>
+                                <th>בחינות</th>
+                            }
+                           @*  <th>כניסה אחרונה</th> *@
+                            <th>
+                                <a asp-page="UsersPage"
+                                   asp-route-sort="LastLogin"
+                                   asp-route-dir="@getSortDir("LastLogin")"
+                                   asp-route-FilterModel.UserNameSearch="@Model.FilterModel.UserNameSearch">
+                                    כניסה אחרונה
+                                    @if (getSortDirIcon("LastLogin") != "")
+                                    {
+                                        <i class="bi bi-arrow-@getSortDirIcon("LastLogin")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>סטטוס</th>
+                            <th></th>
+                            <th>איפוס סיסמה</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.DisplayUsers)
+                        {
+                            <tr data-user-id="@user.UserId">
+                                <td>@(Model.DisplayUsers.IndexOf(user) + 1)</td>
+                                <td>@user.FirstName</td>
+                                <td>@user.LastName</td>
+                                <td>@user.Email</td>
+                                <td>@user.Phone</td>
+                                @if (Model.IsSpecialAdmin)
+                                {
+                                    <td>
+                                        <button type="button" class="btn btn-info btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#editSubjectsModal"
+                                                onclick="fetchSubjects(@user.UserId, '@user.FirstName', '@user.LastName');">
+                                            ערוך מקצועות
+                                        </button>
+                                        @if (user.AssignedSubjects.Count > 0)
+                                        {
+                                            <small>@string.Join(", ", user.AssignedSubjects.Select(s => s.Title))</small>
+                                        }
+                                    </td>
+                                }
+                                @if (!Model.IsSpecialAdmin)
+                                {
+                                    <td>
+                                        @* Role Selection *@
+                                        <select id="role-@user.UserId-@user.PrimarySubjectId" class="form-control form-control-sm role-selector">
+                                            @* class for easier JS targeting *@
+                                            @foreach (var roleOption in Model.AvailableRoles!)
+                                            {
+                                                // displayUser.Role is the role for the current assignment row
+                                                if (roleOption.Value == user.Role)
+                                                {
+                                                    <option value="@roleOption.Value" selected>@roleOption.Text</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@roleOption.Value">@roleOption.Text</option>
+                                                }
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-info btn-sm edit-exams-btn" data-bs-toggle="modal" data-bs-target="#editExamsModal"
+                                                data-user-id="@user.UserId"
+                                                data-user-firstname="@user.FirstName"
+                                                data-user-lastname="@user.LastName"
+                                                data-subject-id="@user.PrimarySubjectId">
+                                            ערוך בחינות
+                                        </button>
+                                    </td>
+                                }
+                                <td>
+                                    @{
+                                        var lastLoginDate = user.LoginRecords
+                                        .OrderByDescending(lr => lr.LoginDate)
+                                        .FirstOrDefault()?.LoginDate;
+                                        if (lastLoginDate.HasValue)
+                                        {
+                                            @TimeConverter.ConvertUtcToIsraelTime(lastLoginDate.Value).ToString("dd/MM/yyyy")
+                                        }
+                                    }
+                                </td>
+                                @if (Model.IsSpecialAdmin)   // Set/Reset User.Active ==> Login yes/no
+                                {
+                                    <td>
+                                        <select id="status-@user.UserId-@user.PrimarySubjectId" class="form-control form-control-sm status-selector">
+                                            @* class for easier JS targeting *@
+                                            @if (user.Active)
+                                            {
+                                                <option value="true" selected>Active</option>
+                                                <option value="false">Inactive</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="true">Active</option>
+                                                <option value="false" selected>Inactive</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <form method="post" asp-page-handler="SpecialUpdateUser" class="update-form-@user.UserId-@user.PrimarySubjectId"
+                                              onsubmit="return prepareUpdateForm(this, @user.UserId, @user.PrimarySubjectId)">
+                                            <input type="hidden" name="userId" value="@user.UserId" />
+                                            <input type="hidden" name="subjectToUpdateId" value="@user.PrimarySubjectId" />
+                                            @* The newRole and newStatus inputs will be added by JavaScript *@
+                                            <button type="submit" class="btn btn-sm btn-success">עדכון</button>
+                                        </form>
+                                    </td>
+                                }
+                                else   // Set/Reset UserSubject.Active ==> Subject yes/no
+                                {
+                                    <td>
+                                        <select id="status-@user.UserId-@user.PrimarySubjectId" class="form-control form-control-sm status-selector">
+                                            @* class for easier JS targeting *@
+                                            @if (user.SubjectActive)
+                                            {
+                                                <option value="true" selected>Active</option>
+                                                <option value="false">Inactive</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="true">Active</option>
+                                                <option value="false" selected>Inactive</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <form method="post" asp-page-handler="UpdateUser" class="update-form-@user.UserId-@user.PrimarySubjectId"
+                                              onsubmit="return prepareUpdateForm(this, @user.UserId, @user.PrimarySubjectId)">
+                                            <input type="hidden" name="userId" value="@user.UserId" />
+                                            <input type="hidden" name="subjectToUpdateId" value="@user.PrimarySubjectId" />
+                                            @* The newRole and newStatus inputs will be added by JavaScript *@
+                                            <button type="submit" class="btn btn-sm btn-success">עדכון</button>
+                                        </form>
+                                    </td>
+                                }
+                                <td>
+                                    <form method="post" asp-page-handler="ResetPassword">
+                                        <input type="hidden" name="userId" value="@user.UserId" />
+                                        <button type="submit" class="btn btn-warning btn-sm"
+                                                onclick="return confirm('האם אתה בטוח שברצונך לאפס את הסיסמה עבור @user.FirstName @user.LastName?');">
+                                            איפוס סיסמה @* Reset Password *@
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <h3>אין משתמשים להצגה במערכת.</h3> @* No users to display in the system. *@
+            }
+        </div>
+    </div>
+
+    @* Bootstrap Modal for Editing Exams *@
+    <div class="modal fade" id="editExamsModal" tabindex="-1" aria-labelledby="editExamsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="editExamsModalLabel"></h5> @* Title will be set dynamically *@
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="modalUserId" name="userId" /> @* Hidden input to store current user ID *@
+                    <input type="hidden" id="modalSubjectIdInput" name="subjectId" />
+                    <div id="examCheckboxesContainer">
+                        טוען בחינות... @* Loading exams... *@
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button> @* Cancel *@
+                    <button type="button" class="btn btn-primary" id="saveExamsBtn">שמור שינויים</button> @* Save Changes *@
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editSubjectsModal" tabindex="-1" aria-labelledby="editSubjectsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="editSubjectsModalLabel">
+                        עריכת מקצועות עבור: <span id="subject-user-name"></span>
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div id="subjects-modal-content">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button>
+                    <button type="button" class="btn btn-primary" id="saveSubjectsBtn">שמור שינויים</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .main-container {
+        display: flex;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .buttonBox {
+        flex: 1;
+        direction: rtl;
+    }
+
+    .filter-button {
+        margin: 40px 0px 0px 20px;
+    }
+
+    .userTable {
+        flex: 9;
+        padding: 0px 20px;
+    }
+</style>
+@section Scripts {
+    <script>
+        // Global function: called directly from the HTML button's onclick attribute
+        window.fetchSubjects = function(userId, userFirstName, userLastName) {
+            // 🛑 SET BREAKPOINT HERE 🛑 (This MUST be hit now)
+
+            const subjectsModalContent = document.getElementById('subjects-modal-content');
+
+            if (!subjectsModalContent) {
+                console.error("Subjects Modal Content container not found.");
+                return;
+            }
+
+            // The modal is already shown by data-bs-toggle="modal"
+            document.getElementById('subject-user-name').textContent = `${userFirstName} ${userLastName}`;
+            subjectsModalContent.innerHTML = 'טוען נתונים...';
+
+            // Use the robust relative path to the handler
+            const fetchUrl = `?handler=ManageSubjectsPartial`;
+
+            // Load the partial view for subjects management via AJAX (GET)
+            $.get(fetchUrl, { userId: userId }, function (data) {
+                subjectsModalContent.innerHTML = data;
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                 console.error("AJAX Error loading subjects partial:", errorThrown);
+                 subjectsModalContent.innerHTML = `<p class="text-danger">שגיאה בטעינת נתונים. קוד שגיאה: ${jqXHR.status}</p>`;
+            });
+        };
+
+        // --- Start Document Ready ---
+        $(document).ready(function () {
+
+            // --- Global Utility Function (Keep this if used elsewhere) ---
+            window.prepareUpdateForm = function(formElement, userId, subjectId) {
+                var $form = $(formElement);
+
+                var roleSelectorId = '#role-' + userId + '-' + subjectId;
+                var statusSelectorId = '#status-' + userId + '-' + subjectId;
+
+                var newRole = $(roleSelectorId).val();
+                var newStatus = $(statusSelectorId).val();
+
+                $form.find('input[name="newRole"], input[name="newStatus"]').remove();
+
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'newRole',
+                    value: newRole
+                }).appendTo($form);
+
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'newStatus',
+                    value: newStatus
+                }).appendTo($form);
+
+                return true;
+            };
+
+            // --- Variable Definitions (No 'new bootstrap.Modal' calls here!) ---
+            const subjectsModalContent = document.getElementById('subjects-modal-content');
+            const saveSubjectsBtn = document.getElementById('saveSubjectsBtn');
+            const editExamsModalElement = document.getElementById('editExamsModal'); // Used for instance creation later
+            const examCheckboxesContainer = document.getElementById('examCheckboxesContainer');
+            const modalUserIdInput = document.getElementById('modalUserId');
+            const saveExamsBtn = document.getElementById('saveExamsBtn');
+            const modalTitle = document.getElementById('editExamsModalLabel');
+            const modalSubjectIdInput = document.getElementById('modalSubjectIdInput');
+
+            // --- Existing Update User Form JS ---
+            document.querySelectorAll('.update-user-form').forEach(form => {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    const userId = this.querySelector('input[name="userId"]').value;
+                    const roleSelect = document.getElementById('role-' + userId);
+                    const statusSelect = document.getElementById('status-' + userId);
+                    const selectedRole = roleSelect ? roleSelect.value : '';
+                    const selectedStatus = statusSelect ? statusSelect.value : '';
+                    this.querySelector('.hidden-role-input').value = selectedRole;
+                    this.querySelector('.hidden-status-input').value = selectedStatus;
+                    this.submit();
+                });
+            });
+
+
+           // --- 2. Save Subjects Handler (AJAX POST) ---
+            if (saveSubjectsBtn) {
+                saveSubjectsBtn.addEventListener('click', async function () {
+                    const userId = document.getElementById('modalSubjectUserId')?.value;
+                    if (!userId) {
+                        alert('שגיאה: מזהה משתמש חסר.');
+                        return;
+                    }
+
+                    // 🛑 NEW DATA COLLECTION LOGIC 🛑
+                    const assignments = [];
+                    // We must iterate over all rows/checkboxes inside the dynamically loaded container
+                    const subjectCheckboxes = document.querySelectorAll('.subject-checkbox');
+
+                    subjectCheckboxes.forEach(checkbox => {
+                        const subjectId = parseInt(checkbox.dataset.subjectId);
+                        const isAssigned = checkbox.checked;
+
+                        // Get the corresponding role selector by its ID
+                        const roleSelector = document.getElementById(`role_select_${subjectId}`);
+
+                        // Role must be explicitly set to a string (e.g., "" or default) if not assigned
+                        let role = isAssigned && roleSelector ? roleSelector.value : "";
+
+                        // Create the assignment object matching the C# DTO
+                        assignments.push({
+                            subjectId: subjectId,
+                            role: role,
+                            isAssigned: isAssigned
+                        });
+                    });
+                    // 🛑 END NEW DATA COLLECTION LOGIC 🛑
+
+
+                    try {
+                        const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                        // 🛑 Update the body payload 🛑
+                        const response = await fetch(`?handler=UpdateUserSubjects`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': antiForgeryToken
+                            },
+                            body: JSON.stringify({ userId: parseInt(userId), assignments: assignments })
+                        });
+                        // 🛑 End Update 🛑
+
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            const errorJson = JSON.parse(errorText); // Attempt to parse the error message
+                            throw new Error(errorJson.message || `HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        if (result.success) {
+                            // Fix: Initialize modal instance before calling hide()
+                            const modalElement = document.getElementById('editSubjectsModal');
+                            const modalInstance = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+                            modalInstance.hide();
+                            location.reload();
+                        } else {
+                            alert(`שגיאה בשמירת שינויים: ${result.message}`);
+                        }
+
+                    } catch (error) {
+                        console.error('Error saving subjects:', error);
+                        alert('שגיאה בשמירת שינויים: ' + error.message);
+                    }
+                });
+            }
+
+
+            // --- 3. Edit Exams Handler (Using direct click for stability) ---
+            // Note: If you have many users, this is inefficient. If it fails, switch to delegation.
+            $('.edit-exams-btn').click(async function () {
+                const userId = $(this).data('user-id');
+                const userFirstName = $(this).data('user-firstname');
+                const userLastName = $(this).data('user-lastname');
+                const subjectId = $(this).data('subject-id');
+
+                // 1. Store IDs in modal's hidden inputs
+                if (modalUserIdInput) {
+                    modalUserIdInput.value = userId;
+                }
+                if (modalSubjectIdInput) {
+                    modalSubjectIdInput.value = subjectId;
+                }
+
+                // 2. Set modal title
+                if (modalTitle) {
+                    modalTitle.textContent = `רשימת בחינות עבור ${userFirstName} ${userLastName}`;
+                }
+
+                // Clear previous checkboxes and show loading message
+                if (examCheckboxesContainer) {
+                    examCheckboxesContainer.innerHTML = 'טוען בחינות...';
+                }
+
+                try {
+                    // 3. AJAX call to get exams
+                    const fetchUrl = `?handler=ExamsForUser&userId=${userId}&subjectId=${subjectId}`;
+                    const response = await fetch(fetchUrl);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    // 4. Populate checkboxes (Re-using your existing logic)
+                    if (examCheckboxesContainer) {
+                        examCheckboxesContainer.innerHTML = '';
+                    }
+
+                    if (data.availableExams && data.availableExams.length > 0) {
+                        data.availableExams.forEach(exam => {
+                            const isChecked = data.allowedExamIds.includes(exam.id);
+                            const div = document.createElement('div');
+                            div.className = 'form-check modal-form-check-rtl';
+
+                            const input = document.createElement('input');
+                            input.className = 'form-check-input';
+                            input.type = 'checkbox';
+                            input.id = `modal_exam_${exam.id}`;
+                            input.name = 'selectedExamIds';
+                            input.value = exam.id;
+                            if (isChecked) {
+                                input.checked = true;
+                            }
+
+                            const label = document.createElement('label');
+                            label.className = 'form-check-label';
+                            label.htmlFor = `modal_exam_${exam.id}`;
+                            label.textContent = exam.examTitle;                            
+                           
+                            div.appendChild(label);
+                            div.appendChild(input);
+
+                            if (examCheckboxesContainer) {
+                                examCheckboxesContainer.appendChild(div);
+                            }
+                        });
+                    } else if (examCheckboxesContainer) {
+                        examCheckboxesContainer.innerHTML = '<p>אין בחינות זמינות.</p>';
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching exams:', error);
+                    if (examCheckboxesContainer) {
+                        examCheckboxesContainer.innerHTML = '<p class="text-danger">שגיאה בטעינת בחינות.</p>';
+                    }
+                }
+            });
+
+            // --- 4. Save Exams Handler (AJAX POST) ---
+            if (saveExamsBtn) {
+                saveExamsBtn.addEventListener('click', async function () {
+                    const userId = modalUserIdInput.value;
+                    const subjectId = modalSubjectIdInput.value;
+                    const selectedExamIds = [];
+                    examCheckboxesContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                        selectedExamIds.push(parseInt(checkbox.value));
+                    });
+
+                    try {
+                        const response = await fetch(`?handler=UpdateAllowedExams`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value // Include anti-forgery token
+                            },
+
+                            body: JSON.stringify({ userId: parseInt(userId), subjectId: parseInt(subjectId), selectedExamIds: selectedExamIds })
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                        }
+
+                        const result = await response.json();
+                        if (result.success) {
+                            // Fix: Initialize modal instance before calling hide()
+                            const modalInstance = bootstrap.Modal.getInstance(editExamsModalElement) || new bootstrap.Modal(editExamsModalElement);
+                            modalInstance.hide();
+                            location.reload();
+                        } else {
+                            alert(`שגיאה בשמירת שינויים: ${result.message}`);
+                        }
+
+                    } catch (error) {
+                        console.error('Error saving exams:', error);
+                        alert('שגיאה בשמירת שינויים: ' + error.message);
+                    }
+                });
+            }
+        });
+    </script>
+    @await Html.PartialAsync("_FilterDialog", Model.FilterModel)
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

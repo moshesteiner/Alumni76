@@ -1,0 +1,149 @@
+﻿@page
+@model Bagrut_Eval.Pages.Admin.HistoryLogModel
+@{
+    ViewData["Title"] = "היסטורית שינויים";
+}
+
+<div class="container-fluid mt-4" style="width:80%;">
+    <br />
+    <div class="card">
+        <div class="card-body" style="direction:ltr; text-align:left;">
+            <table class="table" dir="ltr">
+                <thead>
+                    <tr class="version-header">
+                        <th width="10%">Version</th>
+                        <th width="10%">Date</th>
+                        <th width="10%"></th>
+                        <th width="70%">Changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var versionIndex = 0;
+                    }
+                    @foreach (var note in Model.ReleaseNotes)
+                    {
+                        var rowClass = versionIndex % 2 == 0 ? "version-even" : "version-odd";
+                        versionIndex++;
+                        var spanLines = 0;
+                        if (note.Fixes.Any()) spanLines++;
+                        if (note.Additions.Any()) spanLines++;
+                        if (note.Changes.Any()) spanLines++;
+                        if (note.Removes.Any()) spanLines++;
+
+                        if (note.Additions.Any())
+                        {
+                            <tr class="@rowClass">
+                                @* <td rowspan="@(note.Fixes.Any() ? 2 : 1)" class="text-center"><strong>@note.Version</strong></td>*@
+                                @* <td rowspan="@(note.Fixes.Any() ? 2 : 1)" class="text-center">@note.Date.ToString("dd-MMM-yyyy")</td>*@
+                                <td rowspan="@spanLines" class="text-center"><strong>@note.Version</strong></td>
+                                <td rowspan="@spanLines" class="text-center">@note.Date.ToString("dd-MM-yy")</td>
+                                <td class="text-center">Added</td>
+                                <td>
+                                    <ul>
+                                        @foreach (var change in note.Additions)
+                                        {
+                                            <li>@change</li>
+                                        }
+                                    </ul>
+                                </td>
+                            </tr>
+                        }
+                        if (note.Fixes.Any())
+                        {
+                            <tr class="@rowClass">
+                                @* Version/Date already spanned above *@
+                                <td class="text-center">Fixed</td>
+                                <td>
+                                    <ul>
+                                        @foreach (var change in note.Fixes)
+                                        {
+                                            <li>@change</li>
+                                        }
+                                    </ul>
+                                </td>
+                            </tr>
+                        }
+                        if (note.Changes.Any())
+                        {
+                            <tr class="@rowClass">
+                                @* Version/Date already spanned above *@
+                                <td class="text-center">Changed</td>
+                                <td>
+                                    <ul>
+                                        @foreach (var change in note.Changes)
+                                        {
+                                            <li>@change</li>
+                                        }
+                                    </ul>
+                                </td>
+                            </tr>
+                        }
+                        if (note.Removes.Any())
+                        {
+                            <tr class="@rowClass">
+                                @* Version/Date already spanned above *@
+                                <td class="text-center">Removed</td>
+                                <td>
+                                    <ul>
+                                        @foreach (var change in note.Removes)
+                                        {
+                                            <li>@change</li>
+                                        }
+                                    </ul>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<hr />
+<div class="container mt-4">
+    <div class="card card-last">
+        <div class="card-body" style="direction:ltr; text-align:left;">
+            @Html.Raw(Model.ReleaseNotesHtml)
+        </div>
+    </div>
+</div>
+<style>
+    .card-body table, ul, li {
+        direction: ltr !important;
+        text-align: left !important;
+    }
+
+    .card-body table th {
+        direction: ltr !important;
+        text-align: left !important;
+        padding-left: 40px !important;
+    }
+
+    .version-even {
+        background-color: #dee2e6; /*#f9f9f9; /* light gray */
+    }
+
+    .version-odd {
+        background-color: #ffffff; /* white */
+    }
+
+    .version-header{
+        background-color: lightcyan; 
+    }
+
+    .card-body{
+        padding: 0 !important;
+    }
+
+    .card-last {
+        padding: 16px !important;
+    }
+
+</style>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

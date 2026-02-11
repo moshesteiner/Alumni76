@@ -1,0 +1,188 @@
+﻿@page
+@model Bagrut_Eval.Pages.AddPartModel
+@{
+    ViewData["Title"] = "ניהול סעיפי שאלות וניקוד";
+    // Part Management
+}
+
+<div class="container-fluid">
+    @* Display Success/Error Messages from TempData *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @* Exam Selection Section *@
+    <div class="form-section">
+        <form method="get" asp-page="/AddPart" class="form-row align-items-center examTable">
+            <div class="form-column">
+                <label asp-for="SelectedExamId">בחר בחינה:</label>
+            </div>
+            <div class="form-column input-column">
+                <select asp-for="SelectedExamId" asp-items="Model.AvailableExams" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- בחר בחינה --</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <hr />
+
+    @* Add/Edit Part Section - only displayed if an Exam is selected *@
+    @if (Model.SelectedExamId.HasValue && Model.SelectedExamId.Value > 0)
+    {
+        @if (!Model.IsLocked)
+        {
+            <div class="form-section">
+                <h4 class="d-flex align-items-center">
+                    <span>
+                        @(Model.NewPart != null && Model.NewPart.Id != 0 ? "עריכת סעיף בחינה קיים:" : "הוספת סעיף חדש לבחינה:") &nbsp; @Model.SelectedExamTitle &nbsp;&nbsp;
+                    </span>
+                    <div class="d-flex ms-auto">
+                        <form method="post" asp-page-handler="BulkAdd" enctype="multipart/form-data" class="d-inline-block me-2">
+                            <input type="hidden" name="SelectedExamId" value="@Model.SelectedExamId" />
+                            <input type="file" id="bulkAddFileInput" name="BulkAddFile" style="display: none;" onchange="this.form.submit()" accept=".xlsx" />
+                            <button type="button" class="btn btn-primary mt-3" onclick="document.getElementById('bulkAddFileInput').click();">טעינה מקובץ</button>
+                        </form>
+                        &nbsp;&nbsp;&nbsp;
+                        <button type="button" class="btn btn-info mt-3" onclick="showHelpMessage()">עזרה</button>
+                    </div>
+                </h4>
+                <form method="post">
+                    <input type="hidden" asp-for="NewPart.Id" />
+                    <input type="hidden" asp-for="NewPart.ExamId" value="@(Model.NewPart!.Id == 0 ? Model.SelectedExamId : Model.NewPart.ExamId)" />
+
+                    <br />
+                    @* Combined row for QuestionNumber, QuestionPart, and Score - CORRECTED NESTING! *@
+                    <div class="form-row flex-wrap">
+                        <div class="form-column compact-column" style="width:125px;">
+                            <label asp-for="NewPart.QuestionNumber">מספר שאלה:</label>
+                            <input asp-for="NewPart.QuestionNumber" class="form-control" type="number" />
+                            <span asp-validation-for="NewPart.QuestionNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-column compact-column" style="width:125px;">
+                            <label asp-for="NewPart.QuestionPart">סעיף/חלק:</label>
+                            <input asp-for="NewPart.QuestionPart" class="form-control" />
+                            <span asp-validation-for="NewPart.QuestionPart" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-column compact-column" style="width:125px;">
+                            <label asp-for="NewPart.Score">ניקוד:</label>
+                            <input asp-for="NewPart.Score" class="form-control" />
+                            <span asp-validation-for="NewPart.Score" class="text-danger"></span>
+                        </div>
+
+                        <div style="font-size:1.2em;margin-top:0px;">
+                            <button type="submit" class="btn btn-primary mt-3">
+                                @(Model.NewPart != null && Model.NewPart.Id != 0 ? "עדכן סעיף" : "הוסף סעיף")
+                            </button>
+                            @if (Model.NewPart != null && Model.NewPart.Id != 0)
+                            {
+                                <button type="button" class="btn btn-secondary mt-3" onclick="window.location.href='/AddPart?SelectedExamId=@Model.SelectedExamId'">בטל עריכה</button>
+                            }
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <hr />
+        }
+
+        <div class="table-section" style="width:75%;">
+            <h3>רשימת סעיפי בחינה: &nbsp; @Model.SelectedExamTitle</h3>
+            @if (Model.Parts == null || !Model.Parts.Any())
+            {
+                <h2>אין שאלות וסעיפים להצגה עבור בחינה זו.</h2>
+            }
+            else
+            {
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>בחינה</th>
+                            <th>מספר שאלה</th>
+                            <th>סעיף/חלק</th>
+                            <th>ניקוד</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Parts)
+                        {
+                            <tr>
+                                <td>@item.Exam!.ExamTitle</td>
+                                <td>@item.QuestionNumber</td>
+                                <td>@item.QuestionPart</td>
+                                <td>@item.Score</td>
+                                <td>
+                                    @if (!Model.IsLocked)
+                                    {
+                                        <a asp-page-handler="Edit" asp-route-id="@item.Id" asp-route-selectedExamId="@Model.SelectedExamId" class="btn btn-warning btn-sm">ערוך</a>
+                                        <a asp-page-handler="Delete" asp-route-id="@item.Id" asp-route-selectedExamId="@Model.SelectedExamId" class="btn btn-danger btn-sm" onclick="return confirm('האם אתה בטוח שברצונך למחוק סעיף בחינה זה?');">מחק</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+    else
+    {
+        <h2 class="mt-5">יש לבחור בחינה מהרשימה כדי לנהל סעיפים.</h2>
+    }
+
+    <div class="modal fade" id="excelHelpModal" tabindex="-1" aria-labelledby="excelHelpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-custom-width">     @* modal-xl *@
+            <div class="modal-content">
+                <div class="modal-header">                   
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="excelHelpModalLabel">&nbsp&nbsp סדר עמודות בקובץ אקסל</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="~/images/parts.png" class="help-image" alt="סדר עמודות אקסל" />    @* class="img-fluid" *@
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">סגור</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<style>
+    .modal-custom-width {
+        max-width: 550px;
+        margin: 1.75rem auto;
+    }
+    .help-image {
+        max-width: 300px;
+        width: 100%;
+        height: auto;
+    }
+</style>
+<script>
+    function showHelpMessage() {
+        //alert("סדר העמודות בקובץ האקסל צריך להיות:\nשאלה, סעיף, ניקוד");
+        const myModal = document.getElementById('excelHelpModal');
+        // 2. Create a new Bootstrap Modal instance
+        const bsModal = new bootstrap.Modal(myModal);
+        // 3. Show the modal
+        bsModal.show();
+    }
+</script>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
