@@ -14,6 +14,7 @@
 		<LocalBuildCommand>git rev-parse --short HEAD &gt; "$(TargetDir)githash.txt"</LocalBuildCommand>
 		<PostBuildEvent Condition="'$(COMMIT_ID)' != ''">$(AzurePublishCommand)</PostBuildEvent>
 		<PostBuildEvent Condition="'$(COMMIT_ID)' == ''">$(LocalBuildCommand)</PostBuildEvent>
+		<UserSecretsId>0f556e4b-2b01-4a6b-9b57-7d3d7575ce48</UserSecretsId>
 		
 	</PropertyGroup>
 

@@ -72,7 +72,15 @@ namespace Alumni76.Pages
             _dbContext.Users.Add(NewUser);
             await _dbContext.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"המשתמש {NewUser.FirstName} {NewUser.LastName} נוסף בהצלחה!";
+            TempData["SuccessMessage"] = $"בוגר {NewUser.FirstName} {NewUser.LastName} נוסף בהצלחה!";
+            try
+            {
+                await _emailService.SendWelcomeEmailAsync(NewUser.Email, NewUser.FirstName, tempPassword);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to send welcome email to new user {NewUser.Email}.");
+            }
 
             return RedirectToPage();
         }
