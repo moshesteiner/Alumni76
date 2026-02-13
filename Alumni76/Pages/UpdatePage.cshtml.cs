@@ -1,5 +1,6 @@
 ﻿using Alumni76.Data;
 using Alumni76.Models;
+using Alumni76.Utilities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -8,20 +9,21 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq; // <--- ADD THIS LINE
 using System.Security.Claims;
 using System.Threading.Tasks;
-using System;
-using System.Linq; // <--- ADD THIS LINE
 
 namespace Alumni76.Pages
 {
-    [Authorize(Roles = "Evaluator, Senior, Admin")]
+    [Authorize]
     public class UpdatePageModel : PageModel
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly ILogger<UpdatePageModel> _logger;
         private readonly IPasswordHasher<User> _passwordHasher;
+        private readonly IEmailService _emailService;
 
         private const string specialAdminId = "special_admin_user_id";
 
@@ -45,6 +47,18 @@ namespace Alumni76.Pages
         public string? LastName { get; set; }
 
         [BindProperty]
+        [StringLength(100, ErrorMessage = "שם נעורים לא יכול לחרוג מ-100 תווים")]
+        public string? MaidenName { get; set; }
+
+        [BindProperty]
+        [StringLength(100, ErrorMessage = "כינוי לא יכול לחרוג מ-100 תווים")]
+        public string? NickName { get; set; }
+
+        [BindProperty]
+        [StringLength(8)]
+        public string? Class { get; set; }
+
+        [BindProperty]
         [Required(ErrorMessage = "כתובת אימייל נדרשת")]
         [EmailAddress(ErrorMessage = "פורמט אימייל לא תקין")]
         [StringLength(255, ErrorMessage = "כתובת אימייל לא יכולה לחרוג מ-255 תווים")]
@@ -52,9 +66,18 @@ namespace Alumni76.Pages
 
         [BindProperty]
         [Required(ErrorMessage = "טלפון נדרש")]
-        [RegularExpression(@"^0?(\d{2,3})[\s-]?(\d{7})$", ErrorMessage = "פורמט טלפון לא חוקי. (דוגמה: 05X-XXXXXXX)")]
+        [RegularExpression(@"^(\+?\d{1,3}[- ]?)?\(?(\d{3})\)?[- ]?(\d{3,4})[- ]?(\d{4})$|^0?(\d{2,3})[\s-]?(\d{3})[\s-]?(\d{4})$", ErrorMessage = "מספר לא תקין")]
         [StringLength(15, ErrorMessage = "מספר הטלפון ארוך מדי")] // Max length allowing formatting characters (hyphens/spaces)
         public string? Phone1 { get; set; }
+
+        [BindProperty]
+        [RegularExpression(@"^(\+?\d{1,3}[- ]?)?\(?(\d{3})\)?[- ]?(\d{3,4})[- ]?(\d{4})$|^0?(\d{2,3})[\s-]?(\d{3})[\s-]?(\d{4})$", ErrorMessage = "מספר לא תקין")]
+        [StringLength(15, ErrorMessage = "מספר הטלפון ארוך מדי")] // Max length allowing formatting characters (hyphens/spaces)
+        public string? Phone2 { get; set; }
+
+        [BindProperty]
+        [StringLength(200, ErrorMessage = "כתובת לא יכול לחרוג מ-200 תווים")]
+        public string? Address { get; set; }
 
         [BindProperty]
         [DataType(DataType.Password)]
@@ -65,12 +88,13 @@ namespace Alumni76.Pages
         [DataType(DataType.Password)]
         [Compare("NewPassword", ErrorMessage = "הסיסמה ואישור הסיסמה אינם תואמים")]
         public string? ConfirmPassword { get; set; }
-        public UpdatePageModel(ILogger<UpdatePageModel> logger, ApplicationDbContext dbContext,
+        public UpdatePageModel(ILogger<UpdatePageModel> logger, ApplicationDbContext dbContext, IEmailService emailService,
                         IPasswordHasher<User> passwordHasher)
         {
             _logger = logger;
             _dbContext = dbContext;
             _passwordHasher = passwordHasher;
+            _emailService = emailService!;
         }
 
         private bool TryGetCurrentUserIdAndType(out int? numericUserId, out bool isSpecialAdmin)
@@ -126,16 +150,14 @@ namespace Alumni76.Pages
                 return RedirectToPage("/Index");
             }
 
-            FirstName = UserToDisplay.FirstName;
-            LastName = UserToDisplay.LastName;
-            Email = UserToDisplay.Email;
-            Phone1 = UserToDisplay.Phone1;
+            UpdateFromUserToDisplay(UserToDisplay);
 
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
+            TempData.Remove("NeedsEmailVerification");
             if (!TryGetCurrentUserIdAndType(out int? userId, out bool isSpecialAdmin))
             {
                 ErrorMessage = "שגיאת הרשאה: לא ניתן לעדכן פרטים ללא משתמש מחובר.";
@@ -157,27 +179,20 @@ namespace Alumni76.Pages
                 return RedirectToPage("/Index");
             }
 
-            // Store original values before assigning new ones from BindProperty
-            var originalFirstName = UserToDisplay.FirstName;
-            var originalLastName = UserToDisplay.LastName;
-            var originalEmailFromDb = UserToDisplay.Email; 
-            var originalPhone = UserToDisplay.Phone1;
+            var originalEmailFromDb = UserToDisplay.Email;
 
             // Validate properties based on data annotations (FirstName, LastName, Email format, Password length)
             if (!ModelState.IsValid)
             {
                 ErrorMessage = "ישנן שגיאות בטופס. נא לתקן אותן.";
                 // Re-populate UserToDisplay's properties with the current form values for redisplay
-                UserToDisplay.FirstName = FirstName;
-                UserToDisplay.LastName = LastName;
-                UserToDisplay.Email = Email;
-                UserToDisplay.Phone1 = Phone1!;
+                RecoverUserToDisplay(UserToDisplay);
                 return Page();
             }
 
-            // --- START EMAIL DUPLICATION CHECK ---
             // Only check for email duplication if the email has actually changed
-            if (!string.Equals(Email, originalEmailFromDb, StringComparison.OrdinalIgnoreCase))
+            var emailChaned = !string.Equals(Email, originalEmailFromDb, StringComparison.OrdinalIgnoreCase);
+            if (emailChaned)
             {
                 var isEmailTaken = await _dbContext.Users.AnyAsync(u => u.Email == Email && u.Id != UserToDisplay.Id);
                 if (isEmailTaken)
@@ -185,31 +200,21 @@ namespace Alumni76.Pages
                     ModelState.AddModelError("Email", "כתובת אימייל זו כבר נמצאת בשימוש.");
                     ErrorMessage = "ישנן שגיאות בטופס. נא לתקן אותן.";
                     // Re-populate UserToDisplay's properties with the current form values for redisplay
-                    UserToDisplay.FirstName = FirstName;
-                    UserToDisplay.LastName = LastName;
-                    UserToDisplay.Email = Email;
-                    UserToDisplay.Phone1 = Phone1!;
+                    RecoverUserToDisplay(UserToDisplay);
 
                     return Page(); // Return immediately to show the specific email error
                 }
-            }
-            // --- END EMAIL DUPLICATION CHECK ---
-            // Normalize Phone Format Before Processing 
-            string cleanPhone = new string(Phone1!.Where(char.IsDigit).ToArray());
-            if (cleanPhone.Length == 10) // Standard 05X-XXXXXXX, 07X-XXXXXXX (10 digits)
-            {
-                Phone1 = $"{cleanPhone.Substring(0, 3)}-{cleanPhone.Substring(3)}";
-            }
-            else if (cleanPhone.Length == 9) // Standard 0X-XXXXXXX (9 digits)
-            {
-                Phone1 = $"{cleanPhone.Substring(0, 2)}-{cleanPhone.Substring(2)}";
+
+                // Verify Email change
+                await VerifyEmail(UserToDisplay);
             }
 
+            // Normalize Phone Format Before Processing             
+            Phone1 = FormatPhoneNumber(Phone1);
+            Phone2 = FormatPhoneNumber(Phone2);
+
             // Apply updated values from the form to the tracked entity
-            UserToDisplay.FirstName = FirstName;
-            UserToDisplay.LastName = LastName;
-            UserToDisplay.Email = Email; // Assign the new, validated email
-            UserToDisplay.Phone1 = Phone1!;
+            RecoverUserToDisplay(UserToDisplay);
 
             var passwordChanged = !string.IsNullOrWhiteSpace(NewPassword);
             if (passwordChanged)
@@ -233,7 +238,7 @@ namespace Alumni76.Pages
                 {
                     initiatorId = parsedId;
                 }
-               
+
                 _logger.LogInformation($"UserLog entry created for profile update of user {UserToDisplay.Id} by initiator {initiatorId}.");
 
                 // Refresh claims if name or email changed (email isn't directly in standard Name claim, but good practice to refresh)
@@ -266,7 +271,97 @@ namespace Alumni76.Pages
                 _logger.LogError(ex, $"Failed to update user {userId}.");
             }
 
+            // If Email Changed, verify by sending a code to the new Email
+            if (TempData["NeedsEmailVerification"] != null)
+            {
+                TempData["UserIdForVerification"] = UserToDisplay.Id;
+                return RedirectToPage("/VerifyCode");
+            }
             return RedirectToPage();
+        }
+        private async Task VerifyEmail(User user)
+        {
+            user.EmailVerified = false;    // Mark as unverified
+            user.PendingEmail = Email;
+
+            //  Generate a new code (same logic as FirstTimeUser)
+            var code = new Random().Next(100000, 999999).ToString();
+            user.TwoFactorCode = code;
+            user.TwoFactorCodeExpiration = DateTime.UtcNow.AddMinutes(15);
+
+            // Send the email notification to the NEW email address
+            var emailSubject = "אימות כתובת אימייל חדשה";
+            var emailBody = $"<div style='direction:rtl;'>שלום {user.FirstName},<br>שינית את כתובת האימייל שלך. קוד האימות החדש הוא: <b>{code}</b></div>";
+
+            await _emailService.SendEmailAsync(Email!, emailSubject, emailBody);
+
+            // Will redirect them to VerifyCode AFTER the SaveChangesAsync()
+            TempData["NeedsEmailVerification"] = true;
+        }
+        private void RecoverUserToDisplay(User user)
+        {          
+            user.FirstName = FirstName!;
+            user.LastName = LastName!;
+            user.MaidenName = MaidenName;
+            user.NickName = NickName;
+            user.Class = Class;
+            user.Phone1 = Phone1!;
+            user.Phone2 = Phone2!;
+            user.Address = Address;
+
+            // ONLY update email if it hasn't changed. 
+            // If it HAS changed, the OnPostAsync handles it via PendingEmail.
+            if (user.Email.Equals(Email, StringComparison.OrdinalIgnoreCase))
+            {
+                user.Email = Email!;
+            }
+        }
+        private void UpdateFromUserToDisplay(User user)
+        {
+            FirstName = user.FirstName;
+            LastName = user.LastName;
+            MaidenName = user.MaidenName;
+            NickName = user.NickName;
+            Class = user.Class;
+            Email = user.Email;
+            Phone1 = user.Phone1;
+            Phone2 = user.Phone2;
+            Address = user.Address;
+        }
+        private string FormatPhoneNumber(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
+
+            // 1. Remove all non-digits to analyze the pattern
+            string cleaned = new string(phone.Where(char.IsDigit).ToArray());
+
+            // 2. Handle International Israel code (972...) -> Convert to local (0...)
+            if (cleaned.StartsWith("972") && cleaned.Length > 10)
+            {
+                cleaned = "0" + cleaned.Substring(3);
+            }
+
+            // 3. Israeli Mobile (10 digits: 05X-XXX-XXXX)
+            if (cleaned.Length == 10 && cleaned.StartsWith("05"))
+            {
+                return $"{cleaned.Substring(0, 3)}-{cleaned.Substring(3, 3)}-{cleaned.Substring(6)}";
+            }
+
+            // 4. Israeli Landline (9 digits: 0X-XXX-XXXX)
+            if (cleaned.Length == 9 && cleaned.StartsWith("0"))
+            {
+                return $"{cleaned.Substring(0, 2)}-{cleaned.Substring(2, 3)}-{cleaned.Substring(5)}";
+            }
+
+            // 5. US/Canada Format (11 digits starting with 1: 1-XXX-XXX-XXXX)
+            if (cleaned.Length == 11 && cleaned.StartsWith("1"))
+            {
+                return $"{cleaned.Substring(0, 1)}-{cleaned.Substring(1, 3)}-{cleaned.Substring(4, 3)}-{cleaned.Substring(7)}";
+            }
+
+            // 6. If it's some other international length, return the cleaned digits 
+            // (at least this removes the mess if they typed weirdly)
+            return cleaned.Length > 0 ? cleaned : phone;
         }
     }
 }

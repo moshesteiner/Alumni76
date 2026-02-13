@@ -74,7 +74,25 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Prevents anything from leaking out */
+    padding: 10px;
 }
+.navbar-logo {
+    /* This is the secret: it will never be taller than the header */
+    max-height: 80px;
+    width: auto; /* Keeps aspect ratio */
+    max-width: 100%; /* Ensures it doesn't overflow horizontally on small screens */
+    object-fit: contain; /* Keeps the image from stretching */
+    transition: transform 0.3s ease; /* Optional: smooth effect */
+}
+
+    .navbar-logo:hover {
+        transform: scale(1.05); /* Optional: slight pop on hover */
+    }
 
 #title-area {
     grid-area: title-area;

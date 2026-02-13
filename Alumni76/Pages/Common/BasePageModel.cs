@@ -21,6 +21,7 @@ namespace Alumni76.Pages.Common
 
         protected const string FilterSessionKey = "UserFilterSettings";
         protected const string specialAdminId = "special_admin_user_id";
+        protected const string specialAdminEmail = "steiner.moshe@gmail.com";
 
         public bool IsSpecialAdmin { get; set; }
 
@@ -68,6 +69,16 @@ namespace Alumni76.Pages.Common
 
         protected virtual Task OnGetAsync()
         {
+            string? referer = Request.Headers["Referer"].ToString();
+            string currentPath = Request.Path.ToString();
+
+            // Check if the user came from a DIFFERENT page, and clear the FilterSessionKey
+            if (!string.IsNullOrEmpty(referer) && !referer.Contains(currentPath))
+            {
+                HttpContext.Session.Remove(FilterSessionKey);
+            }
+
+
             LoadUserContext();
             return Task.CompletedTask;
         }
@@ -76,6 +87,6 @@ namespace Alumni76.Pages.Common
         {
             LoadUserContext();
             return Task.CompletedTask;
-        }
+        }       
     }
 }

@@ -16,6 +16,7 @@ namespace Alumni76.Data
             IConfigurationRoot configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json")
+                .AddUserSecrets<Program>()
                 .Build();
 
             // Get the connection string from configuration

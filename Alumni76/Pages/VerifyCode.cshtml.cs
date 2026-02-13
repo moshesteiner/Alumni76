@@ -35,6 +35,8 @@ namespace Alumni76.Pages
 
         private readonly IPasswordHasher<User> _passwordHasher;
 
+        public User? CurrentUser { get; set; }
+
         public VerifyCodeModel(ApplicationDbContext context, IPasswordHasher<User> passwordHasher,
                                ILogger<VerifyCodeModel> logger, ITimeProvider timeProvider) : base(context, logger, timeProvider)
         {
@@ -48,14 +50,100 @@ namespace Alumni76.Pages
             if (TempData["UserIdForVerification"] is int userId)
             {
                 UserId = userId;
+                CurrentUser = await _dbContext.Users.FindAsync(UserId);
+                if (CurrentUser == null) return RedirectToPage("/Index");
+                TempData.Keep("UserIdForVerification");
                 return Page();
             }
             return RedirectToPage("/Index");
         }
 
+
+
         public new async Task<IActionResult> OnPostAsync()
         {
             await base.OnPostAsync();
+            CurrentUser = await _dbContext.Users.FindAsync(UserId);
+
+            if (CurrentUser != null && CurrentUser.LastLogin != null)
+            {
+                ModelState.Remove("NewPassword");
+                ModelState.Remove("ConfirmPassword");
+            }
+
+            if (!ModelState.IsValid) return Page();
+
+            if (CurrentUser == null || CurrentUser.TwoFactorCode != Code || CurrentUser.TwoFactorCodeExpiration < DateTime.UtcNow)
+            {
+                ModelState.AddModelError(string.Empty, "קוד האימות שגוי או פג תוקף.");
+                return Page();
+            }
+
+            bool isFirstTimeLogin = CurrentUser.LastLogin == null;
+
+            // Handle Email Swap
+            if (!string.IsNullOrEmpty(CurrentUser.PendingEmail))
+            {
+                CurrentUser.Email = CurrentUser.PendingEmail;
+                CurrentUser.PendingEmail = null;
+                CurrentUser.EmailVerified = true;
+            }
+
+            // Update Status/Password
+            if (isFirstTimeLogin)
+            {
+                CurrentUser.LastLogin = DateTime.UtcNow;
+                CurrentUser.EmailVerified = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(NewPassword))
+            {
+                CurrentUser.PasswordHash = _passwordHasher.HashPassword(CurrentUser, NewPassword!);
+            }
+
+            CurrentUser.TwoFactorCode = null;
+            CurrentUser.TwoFactorCodeExpiration = null;
+
+            await _dbContext.SaveChangesAsync();
+
+            // --- CONDITIONAL AUTH LOGIC ---
+
+            if (isFirstTimeLogin)
+            {
+                // For first-timers, stick to your original plan: Clear everything and make them log in fresh.
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                TempData["SuccessMessage"] = "הגדרת החשבון הושלמה! כעת ניתן להתחבר עם הסיסמה החדשה.";
+                return RedirectToPage("/Index");
+            }
+            else
+            {
+                // For existing users changing email: Refresh claims so they stay logged in.
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, $"{CurrentUser.FirstName} {CurrentUser.LastName}"),
+                    new Claim(ClaimTypes.NameIdentifier, CurrentUser.Id.ToString()),
+                    new Claim(ClaimTypes.Role, CurrentUser.IsAdmin ? "Admin" : "Member"),
+                    new Claim(ClaimTypes.Email, CurrentUser.Email)
+                };
+
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+
+                TempData["SuccessMessage"] = "כתובת האימייל אומתה ועודכנה בהצלחה.";
+                return RedirectToPage("/UpdatePage");
+            }
+        }
+
+
+        public new async Task<IActionResult> _OnPostAsync()
+        {
+            await base.OnPostAsync();
+            CurrentUser = await _dbContext.Users.FindAsync(UserId);
+            if (CurrentUser != null && CurrentUser.LastLogin != null)
+            {
+                ModelState.Remove("NewPassword");
+                ModelState.Remove("ConfirmPassword");
+            }
             if (!ModelState.IsValid)
             {
                 return Page();
@@ -69,8 +157,22 @@ namespace Alumni76.Pages
                 return Page();
             }
 
-            // Update the password and clear the 2FA code
-            user.PasswordHash = _passwordHasher.HashPassword(user, NewPassword!);
+            var isFirstTimeLogin = user.LastLogin == null;
+            if (!string.IsNullOrEmpty(user.PendingEmail))
+            {
+                user.Email = user.PendingEmail;
+                user.PendingEmail = null;
+                user.EmailVerified = true;
+            }
+            if (isFirstTimeLogin)
+            {
+                user.LastLogin = DateTime.UtcNow;
+                user.EmailVerified = true; // Also mark verified on first login
+            }
+            if (!string.IsNullOrWhiteSpace(NewPassword))
+            {
+                user.PasswordHash = _passwordHasher.HashPassword(user, NewPassword!);
+            }
             user.TwoFactorCode = null;
             user.TwoFactorCodeExpiration = null;
 
@@ -78,12 +180,29 @@ namespace Alumni76.Pages
             // This updates the LastLogin table, ensuring the next login is not flagged as first-time.
             await _dbContext.SaveChangesAsync();
 
+            var claims = new List<Claim>   // refresh Claims in case of new Email
+                {
+                    new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "Member"),
+                    new Claim(ClaimTypes.Email, user.Email) // This is now the NEW verified email
+                };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
             // Clear the current user session/cookie (Logout), as we don't know to which Subject to login.
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
-            TempData["SuccessMessage"] = "הסיסמה עודכנה בהצלחה! אנא התחבר מחדש עם הסיסמה החדשה";
-
-            return RedirectToPage("/Index");
+            if (isFirstTimeLogin)
+            {
+                TempData["SuccessMessage"] = "הגדרת החשבון הושלמה בהצלחה!";
+                return RedirectToPage("/Index"); // New users go to home
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "כתובת האימייל אומתה ועודכנה בהצלחה.";
+                return RedirectToPage("/UpdatePage"); // Profile editors go back to profile
+            }
         }
     }
 }

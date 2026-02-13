@@ -17,7 +17,11 @@ namespace Alumni76.Data // Your DbContext namespace
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);          
+            base.OnModelCreating(modelBuilder);
+           
+            modelBuilder.Entity<User>()
+                .Property(u => u.Active)
+                .HasDefaultValue(true);
         }
     }
 }

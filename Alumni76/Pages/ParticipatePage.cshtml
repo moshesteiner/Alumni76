@@ -1,0 +1,155 @@
+﻿@page
+@model ParticipatePageModel
+@{
+    ViewData["Title"] = "רשימת משתתפים";
+}
+
+@* Changed class to 'container' for ~75% width *@
+<div class="container mt-4">
+    <div class="main-container">
+        <div class="buttunBox">
+            <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">סינון</button>
+            <form method="post" asp-page-handler="ResetSort" class="d-inline">
+                <button type="submit" class="btn btn-primary filter-button">איפוס</button>
+            </form>
+        </div>
+
+        <div class="userTable">
+            @if (Model.DisplayUsers != null && Model.DisplayUsers.Any())
+            {
+                var sortState = (List<string>)(ViewData["SortState"])!;
+
+                Func<string, string> getSortDir = colName =>
+                {
+                    if (sortState != null && sortState.Any() && sortState.First().StartsWith(colName))
+                    {
+                        return sortState.First().EndsWith("_asc") ? "desc" : "asc";
+                    }
+                    return "asc";
+                };
+
+                Func<string, bool> isCurrent = col =>
+                sortState != null && sortState.Any() && sortState.First().StartsWith(col);
+
+                Func<string, string> getSortDirIcon = colName =>
+                {
+                    if (sortState == null || !sortState.Any() || !sortState.First().StartsWith(colName)) return "";
+                    return sortState.First().EndsWith("_asc") ? "up" : "down";
+                };
+
+                <table class="table table-bordered table-striped mt-3 user-table-compact">
+                    <thead>
+                        <tr style="background: #a0a0a0;">
+                            <th style="width: 5%;"></th>
+                            <th style="width: 20%;" class="sortable-header @(isCurrent("FirstName") ? "active-sort-col" : "")">
+                                <a asp-page="ParticipatePage" asp-route-sort="FirstName" asp-route-dir="@getSortDir("FirstName")">
+                                    שם פרטי @(isCurrent("FirstName") ? Html.Raw($"<i class='bi bi-arrow-{getSortDirIcon("FirstName")}'></i>") : "")
+                                </a>
+                            </th>
+                            <th style="width: 20%;" class="sortable-header @(isCurrent("LastName") ? "active-sort-col" : "")">
+                                <a asp-page="ParticipatePage" asp-route-sort="LastName" asp-route-dir="@getSortDir("LastName")">
+                                    שם משפחה @(isCurrent("LastName") ? Html.Raw($"<i class='bi bi-arrow-{getSortDirIcon("LastName")}'></i>") : "")
+                                </a>
+                            </th>
+                            <th style="width: 20%;">שם נעורים</th>
+                            <th style="width: 20%;">כינוי</th>
+                            <th style="width: 15%;" class="sortable-header @(isCurrent("Class") ? "active-sort-col" : "")">
+                                <a asp-page="ParticipatePage" asp-route-sort="Class" asp-route-dir="@getSortDir("Class")">
+                                    כיתה @(isCurrent("Class") ? Html.Raw($"<i class='bi bi-arrow-{getSortDirIcon("Class")}'></i>") : "")
+                                </a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.DisplayUsers)
+                        {
+                            <tr>
+                                <td>@(Model.DisplayUsers.IndexOf(user) + 1)</td>
+                                <td>@user.FirstName</td>
+                                <td>@user.LastName</td>
+                                <td>@user.MaidenName</td>
+                                <td>@user.NickName</td>
+                                <td>@user.Class</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <h3 class="mt-4">אין משתתפים להצגה כרגע.</h3>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Layout alignment */
+    .main-container {
+        display: flex;
+        width: 100%;
+        direction: rtl;
+        gap: 20px;
+    }
+
+    .buttunBox {
+        flex: 1;
+        min-width: 120px;
+        padding-left:50px;
+    }
+
+    .userTable {
+        flex: 12;
+        padding: 0px 20px;
+    }
+
+    .filter-button {
+        margin-top: 40px;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    /* Fix Row Heights (copied from UsersPage) */
+    .user-table-compact th,
+    .user-table-compact td {
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        vertical-align: middle !important;
+        line-height: 1.5;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Table Header styling */
+    .user-table-compact thead th {
+        background-color: #a0a0a0 !important;
+        color: white;
+        text-align: center;
+    }
+
+    /* Sortable distinctions (Golden-Yellow) */
+    .sortable-header a {
+        color: #ffeb3b !important;
+        font-weight: 600;
+        display: block;
+        text-decoration: none;
+    }
+
+    .active-sort-col {
+        border-bottom: 3px solid #ffeb3b !important;
+        background-color: #7a7a7a !important;
+    }
+
+    .sortable-header:hover {
+        background-color: #888888 !important;
+    }
+</style>
+
+@section Scripts {
+    @await Html.PartialAsync("_FilterDialog", Model.FilterModel)
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -167,7 +167,7 @@ namespace Alumni76.Utilities
             var templateFile = Path.Combine(_templatePath, "BulkUsersTemplate.html");
             var baseTemplate = await File.ReadAllTextAsync(templateFile);
 
-            var subject = "הוספת חברים חדשים";
+            var subject = "הוספת בוגרים לקבוצה";
            
             var personalizedBody = baseTemplate.Replace("{FirstName}", firstName)
                                                 .Replace("{addedUsers}", added)

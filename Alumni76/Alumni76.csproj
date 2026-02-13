@@ -55,7 +55,6 @@
 	  <Folder Include="Credentials\" />
 	  <Folder Include="Migrations\" />
 	  <Folder Include="Pages\Admin\" />
-	  <Folder Include="wwwroot\images\" />
 	</ItemGroup>
 
 </Project>

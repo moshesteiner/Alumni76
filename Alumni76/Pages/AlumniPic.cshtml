@@ -1,0 +1,22 @@
+﻿@page
+@model Alumni76.Pages.AlumniPicModel
+@{
+    ViewData["Title"] = "המחזור שלנו";
+}
+
+<center>
+    <div class="photo-wrapper">
+        @* Adding asp-append-version makes the ~ work and prevents caching issues *@
+        <img src="~/images/Alumni-76.png"
+             alt="תמונת מחזור 1976"
+             class="full-res-photo"
+             asp-append-version="true" />
+    </div>
+</center>
+
+@* For the download link, it's safer to use the path without the tilde if it's not a tag helper *@
+@* <div class="photo-controls">
+    <a href="/images/Alumni-76.png" download class="btn btn-secondary btn-sm">
+        <i class="bi bi-download"></i> הורד תמונה ברזולוציה מלאה
+    </a>
+</div> *@

@@ -40,7 +40,8 @@ namespace Alumni76.Utilities
             // Apply filters           
             if (!string.IsNullOrEmpty(model.UserNameSearch))
             {
-                query = query.Where(u => u.FirstName!.Contains(model.UserNameSearch) || u.LastName!.Contains(model.UserNameSearch));
+                query = query.Where(u => u.FirstName!.Contains(model.UserNameSearch) ||
+                                    u.LastName!.Contains(model.UserNameSearch) || u.Class!.Contains(model.UserNameSearch));
             }            
             return query;
         }

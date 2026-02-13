@@ -68,6 +68,7 @@ namespace Alumni76.Pages
             NewUser.PasswordHash = _passwordHasher.HashPassword(NewUser, tempPassword);
             NewUser.Phone1 = FormatPhoneNumber(NewUser.Phone1);
             NewUser.Phone2 = FormatPhoneNumber(NewUser.Phone2);
+            NewUser.Active = true;
 
             _dbContext.Users.Add(NewUser);
             await _dbContext.SaveChangesAsync();
@@ -118,10 +119,10 @@ namespace Alumni76.Pages
 
                         for (int row = 2; row <= rowCount; row++)
                         {
-                            var rowData = ReadRowData(worksheet, row);
+                            var (rowData, errMessage) = ReadRowData(worksheet, row);
                             if (rowData == null)
                             {
-                                notAddedUsers.Add($"שורה {row}: חסר פרט חובה (שם, דוא\"ל)");
+                                notAddedUsers.Add($"שורה {row}: {errMessage}");
                                 continue;
                             }
 
@@ -132,7 +133,7 @@ namespace Alumni76.Pages
                                 bulkUsersForLog.Add(logEntry);
                                 if (!string.IsNullOrEmpty(newPassword))
                                 {
-                                    successfullyAddedUsers.Add((rowData.FirstName, rowData.Email, newPassword));
+                                    successfullyAddedUsers.Add(($"{rowData.FirstName} {rowData.LastName}", rowData.Email, newPassword));
                                 }
                             }
                         }
@@ -143,7 +144,7 @@ namespace Alumni76.Pages
                 await SendEmailToLoggedUser(successfullyAddedUsers, notAddedUsers);
 
                 // --- Finalization ---
-                var logMessage = $"הוספה גורפת הושלמה. סה\"כ הוספו/שוייכו: {bulkUsersForLog.Count} חברים. שורות כשל: {notAddedUsers.Count}.";
+                var logMessage = $"הוספה גורפת הושלמה. סה\"כ הוספו/שוייכו: {bulkUsersForLog.Count} חברים.   שורות שנכשלו: {notAddedUsers.Count}.";
                 TempData["SuccessMessage"] = logMessage;
                 TempData["BulkUsers"] = ListToString(successfullyAddedUsers);
 
@@ -206,7 +207,7 @@ namespace Alumni76.Pages
             public string Address { get; set; } = string.Empty;
             public string Arrives { get; set; } = string.Empty;
         }
-        private BulkUserRowData? ReadRowData(ExcelWorksheet worksheet, int row)
+        private (BulkUserRowData?, string) ReadRowData(ExcelWorksheet worksheet, int row)
         {
             // Read columns (assuming 1-based index)
             string? firstName = worksheet.Cells[row, 1].GetValue<string>()?.Trim();
@@ -222,10 +223,14 @@ namespace Alumni76.Pages
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
             {
-                return null;
+                string msg = "";
+                if (string.IsNullOrEmpty(email)) msg += "חסר אימייל. ";
+                if (string.IsNullOrEmpty(firstName)) msg += "חסר שם פרטי. ";
+                if (string.IsNullOrEmpty(lastName)) msg += "חסר שם משפחה.";
+                return (null, msg);
             }
 
-            return new BulkUserRowData
+            return (new BulkUserRowData
             {
                 RowNumber = row,
                 FirstName = firstName!,
@@ -238,7 +243,7 @@ namespace Alumni76.Pages
                 Phone2 = phone2!,
                 Address = address!,
                 Arrives = arrives!
-            };
+            }, "");
         }
         private async Task<(bool success, string logEntry, string? newPassword)> ProcessSingleUserRowAsync(
                                 BulkUserRowData rowData,
@@ -273,6 +278,7 @@ namespace Alumni76.Pages
                     Phone1 = FormatPhoneNumber(rowData.Phone1),
                     Phone2 = FormatPhoneNumber(rowData.Phone2),
                     Address = rowData.Address,
+                    Active = true,
                     PasswordHash = _passwordHasher.HashPassword(null!, generatedPassword)
                 };
                 _dbContext.Users.Add(userToProcess);
@@ -287,7 +293,7 @@ namespace Alumni76.Pages
                     {
                         var arrive = new Participate
                         {
-                            UserId = userToProcess.Id
+                            User = userToProcess 
                         };
                         _dbContext.Participates.Add(arrive);
                     }
@@ -309,7 +315,6 @@ namespace Alumni76.Pages
             }
 
             // --- Log Entry Creation ---
-            string assignmentStatus = isNewUser ? "נוצר" : "שויך מחדש";
             string logEntry = $"{userToProcess.FirstName} {userToProcess.LastName} ({userToProcess.Email}) ";
 
             // Return success status, the log entry, and the password (if new user)

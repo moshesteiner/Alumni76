@@ -1,8 +1,7 @@
 ﻿@page
-@model UsersPageModel
-@using Alumni76.Utilities
+@model Alumni76.Pages.UserManagementModel
 @{
-    ViewData["Title"] = "רשימת בוגרים";
+    ViewData["Title"] = "ניהול הרשאות משתמשים";
 }
 
 <div class="full-width-content">
@@ -55,44 +54,53 @@
                 <table class="table table-bordered table-striped mt-3 user-table-compact">
                     <thead>
                         <tr style="background: #a0a0a0;">
-                            <th style="width: 2%;"></th>                           
+                            <th style="width: 2%;"></th>
                             <th style="width: 5%;" class="sortable-header @(isCurrentSort("FirstName") ? "active-sort-col" : "")">
-                                <a asp-page="UsersPage" asp-route-sort="FirstName" asp-route-dir="@getSortDir("FirstName")">
+                                <a asp-page="UserManagement" asp-route-sort="FirstName" asp-route-dir="@getSortDir("FirstName")">
                                     שם פרטי <i class="bi @getSortDirIcon("FirstName")"></i>
                                 </a>
                             </th>
                             <th style="width: 8%;" class="sortable-header @(isCurrentSort("LastName") ? "active-sort-col" : "")">
-                                <a asp-page="UsersPage" asp-route-sort="LastName" asp-route-dir="@getSortDir("LastName")">
+                                <a asp-page="UserManagement" asp-route-sort="LastName" asp-route-dir="@getSortDir("LastName")">
                                     שם משפחה <i class="bi @getSortDirIcon("LastName")"></i>
                                 </a>
                             </th>
                             <th style="width: 8%;">שם נעורים</th>
-                            <th style="width: 8%;">כינוי</th>
                             <th style="width: 3%;" class="sortable-header @(isCurrentSort("Class") ? "active-sort-col" : "")">
-                                <a asp-page="UsersPage" asp-route-sort="Class" asp-route-dir="@getSortDir("Class")">
+                                <a asp-page="UserManagement" asp-route-sort="Class" asp-route-dir="@getSortDir("Class")">
                                     כיתה <i class="bi @getSortDirIcon("Class")"></i>
                                 </a>
                             </th>
-                            <th style="width: 7%;">טלפון 1</th>
-                            <th style="width: 7%;">טלפון 2</th>
                             <th style="width: 15%;">אימייל</th>
-                            <th style="width: 15%;">כתובת</th>
+                            <th style="width: 8%;" class="text-center">פעיל</th>
+                            <th style="width: 8%;" class="text-center">אדמין</th>
+                            <th style="width: 8%;" class="text-center"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var user in Model.DisplayUsers)
                         {
                             <tr data-user-id="@user.UserId">
-                                <td>@(Model.DisplayUsers.IndexOf(user) + 1)</td>
-                                <td>@user.FirstName</td>
-                                <td>@user.LastName</td>
-                                <td>@user.MaidenName</td>
-                                <td>@user.NickName</td>
-                                <td>@user.Class</td>
-                                <td>@user.Phone1</td>
-                                <td>@user.Phone2</td>
-                                <td style="text-align: left; direction: ltr;">@user.Email</td>
-                                <td style="padding-right: 20px;">@user.Address</td>
+                                <form method="post" asp-page-handler="UpdateUser">
+                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                    <td>@(Model.DisplayUsers.IndexOf(user) + 1)</td>
+                                    <td>@user.FirstName</td>
+                                    <td>@user.LastName</td>
+                                    <td>@user.MaidenName</td>
+                                    <td>@user.Class</td>
+                                    <td style="text-align: left; direction: ltr;">@user.Email</td>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="isActive" value="true" @(user.Active ? "checked" : "") class="form-check-input" />
+                                        <input type="hidden" name="isActive" value="false" />
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="isAdmin" value="true" @(user.IsAdmin ? "checked" : "") class="form-check-input" />
+                                        <input type="hidden" name="isAdmin" value="false" />
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="submit" class="btn btn-sm btn-success">שמור</button>
+                                    </td>
+                                </form>
                             </tr>
                         }
                     </tbody>
@@ -109,7 +117,7 @@
 <style>
     .main-container {
         display: flex;
-        width: 100%;
+        width: 80%;
         padding: 0;
         margin: 0;
     }
@@ -211,7 +219,16 @@
         background-color: #7a7a7a !important; /* Slightly darker background */
         border-bottom: 3px solid #ffeb3b !important; /* Underline the active one */
     }
+
+    th {
+        text-align: right;
+    }
+
+    .form-check-input {
+        cursor: pointer;
+    }
 </style>
+
 
 @section Scripts {
     @await Html.PartialAsync("_FilterDialog", Model.FilterModel)

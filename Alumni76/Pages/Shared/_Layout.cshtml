@@ -7,12 +7,12 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 @{
-                            bool isMaintenanceMode = Configuration.GetValue<bool>("MaintenanceMode:IsEnabled");
+                                bool isMaintenanceMode = Configuration.GetValue<bool>("MaintenanceMode:IsEnabled");
 }
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - הערכת בגרות</title>
+    <title>@ViewData["Title"]</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @* <link rel="stylesheet" href="~/Alumni76.styles.css" asp-append-version="true" /> *@
@@ -28,16 +28,16 @@
                 <div id="subTitleRight" class="container-fluid py-3">
                     <h1>@ViewData["Title"]</h1>
                     @{
-                        // var isSpecial = ViewData["special"] as string == "true" ? true : false;
                         var isSpecial = User.HasClaim("IsSpecialAdmin", "true") ? true : false;
+                        var isAdmin = User.IsInRole("Admin");
                     }
                 </div>
-                <div id="subTitleLeft" class="container-fluid py-3">
+                @* <div id="subTitleLeft" class="container-fluid py-3">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <h3 style="margin:0px;padding:0px"> @User.Identity.Name</h3>
                     }
-                </div>
+                </div> *@
             </div>
         </header>
 
@@ -49,13 +49,22 @@
             }
             else
             {
-                <h2>עירוני ה</h2>
-                <small>מחזור כא</small>
+                @* <h2>עירוני ה</h2> *@
+                @* <small>מחזור כא</small> *@
+                <a asp-page="/AlumniPic">
+                    <img src="~/images/logo.png" alt="Logo" class="navbar-logo" />
+                </a>
             }
         </div>
 
         <div id="menu-area">
             <nav>
+                <div id="menu-top" class="nav flex-column nav-item nav-item-head">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <center>@User.Identity.Name</center>
+                    }
+                </div>
                 <div id="menu-center">
                     <hr />
                     @{
@@ -70,17 +79,35 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/UsersPage">חברים</a>
+                                <a class="nav-link text-dark" asp-area="" asp-page="/UsersPage">רשימת בוגרים</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/ParticipatePage">רשימת משתתפים</a>
                             </li>
                             <br />
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-page="/UpdatePage">עדכון פרטים</a>
                             </li>
                             <br />
-                            @if (isSpecial)
+                            @if (isAdmin)
                             {
+                                <br />
+                                <hr />
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-page="/AdminPage">עדכון רשימות</a>
+                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-page="/AddUser">הוספת חבר/ה</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-page="/MessageAll">שליחת הודעה</a>
+                                </li>
+                            }
+                            @if (isSpecial)
+                            {
+                                <br /><hr />
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-page="/UserManagement">ניהול משתמשים</a>
                                 </li>
                             }
                         }
@@ -207,6 +234,11 @@
                 padding-left: 25px;
                 font-size: 0.8em;
             }
+
+            .form-control-sm, .form-select-sm {
+                padding: 2px 5px;
+                font-size: 0.95rem; /* Increased from 0.85rem */
+                height: 31px;
         </style>
 
     </div> @* End of layout-wrapper *@

@@ -2,6 +2,7 @@
 @model Alumni76.Pages.UpdatePageModel
 @{
     ViewData["Title"] = "עדכון פרטים"; // Update User Details
+    var classOptions = new List<string> { "", "יב-1", "יב-2", "יב-3", "יב-4", "יב-5" };
 }
 
 <div class="container">
@@ -30,7 +31,7 @@
             <input type="hidden" asp-for="UserId" /> @* Hidden field to pass UserId on post *@
 
             <div class="form-group row mb-3">
-                <label asp-for="FirstName" class="col-sm-2 col-form-label">שם פרטי:</label> @* First Name: *@
+                <label asp-for="FirstName" class="col-sm-2 col-form-label">שם פרטי:</label>
                 <div class="col-sm-9">
                     <input asp-for="FirstName" class="form-control" />
                     <span asp-validation-for="FirstName" class="text-danger"></span>
@@ -38,10 +39,39 @@
             </div>
 
             <div class="form-group row mb-3">
-                <label asp-for="LastName" class="col-sm-2 col-form-label">שם משפחה:</label> @* Last Name: *@
+                <label asp-for="LastName" class="col-sm-2 col-form-label">שם משפחה:</label>
                 <div class="col-sm-9">
                     <input asp-for="LastName" class="form-control" />
                     <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label asp-for="MaidenName" class="col-sm-2 col-form-label">שם נעורים:</label>
+                <div class="col-sm-9">
+                    <input asp-for="MaidenName" class="form-control" />
+                    <span asp-validation-for="MaidenName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label asp-for="NickName" class="col-sm-2 col-form-label">כינוי:</label>
+                <div class="col-sm-9">
+                    <input asp-for="NickName" class="form-control" />
+                    <span asp-validation-for="NickName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label asp-for="Class" class="col-sm-2 col-form-label">כיתה:</label>
+                <div class="col-sm-9">
+                    <select name="Class" class="form-control">
+                        @foreach (var opt in classOptions)
+                        {
+                            <option value="@opt" selected="@(Model.Class == opt)">@opt</option>
+                        }
+                    </select>                        
+                    <span asp-validation-for="Class" class="text-danger"></span>
                 </div>
             </div>
 
@@ -54,19 +84,35 @@
             </div>
 
             <div class="form-group row mb-3">
-                <label asp-for="Phone1" class="col-sm-2 col-form-label">טלפון:</label> 
+                <label asp-for="Phone1" class="col-sm-2 col-form-label">טלפון 1:</label>
                 <div class="col-sm-9">
                     <input asp-for="Phone1" class="form-control" />
                     <span asp-validation-for="Phone1" class="text-danger"></span>
                 </div>
             </div>
 
-            <hr /> @* Separator for password fields *@
-            <h3>שינוי סיסמה (אופציונלי)</h3> @* Change Password (Optional) *@
-            <p>השאר שדות אלה ריקים אם אינך רוצה לשנות את הסיסמה.</p> @* Leave these fields empty if you don't want to change the password. *@
+            <div class="form-group row mb-3">
+                <label asp-for="Phone2" class="col-sm-2 col-form-label">טלפון 2:</label>
+                <div class="col-sm-9">
+                    <input asp-for="Phone2" class="form-control" />
+                    <span asp-validation-for="Phone2" class="text-danger"></span>
+                </div>
+            </div>
 
             <div class="form-group row mb-3">
-                <label asp-for="NewPassword" class="col-sm-2 col-form-label">סיסמה חדשה:</label> @* New Password: *@
+                <label asp-for="Address" class="col-sm-2 col-form-label">כתובת:</label>
+                <div class="col-sm-9">
+                    <input asp-for="Address" class="form-control" />
+                    <span asp-validation-for="Address" class="text-danger"></span>
+                </div>
+            </div>
+
+            <hr />
+            <h3>שינוי סיסמה (אופציונלי)</h3> 
+            <p>השאר שדות אלה ריקים אם אינך רוצה לשנות את הסיסמה.</p> 
+
+            <div class="form-group row mb-3">
+                <label asp-for="NewPassword" class="col-sm-2 col-form-label">סיסמה חדשה:</label> 
                 <div class="col-sm-9">
                     <input asp-for="NewPassword" class="form-control" />
                     <span asp-validation-for="NewPassword" class="text-danger"></span>
@@ -85,7 +131,7 @@
                 <div id="actionButton">
                     @* class="col-sm-9 offset-sm-3" *@
                     <button type="submit" class="btn btn-primary" style="font-size:1.1em;">שמור שינויים</button> @* Save Changes *@
-                    <a asp-page="/UsersPage" class="btn btn-secondary" style="font-size:1.1em;margin-right:25px;">ביטול</a> @* Cancel *@
+                    <a asp-page="/Index" class="btn btn-secondary" style="font-size:1.1em;margin-right:25px;">ביטול</a> @* Cancel *@
                 </div>
             </div>
         </form>
@@ -96,13 +142,14 @@
     }
 </div>
 <style>
-    .col-form-label{
-        font-size:1.2em!important;
+    .col-form-label {
+        font-size: 1.2em !important;
     }
+
     .form-control {
         width: 50%;
     }
-  </style>
+</style>
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");

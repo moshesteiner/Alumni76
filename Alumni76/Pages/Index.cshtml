@@ -60,31 +60,160 @@
 }
 else
 {
-    <br />
-    <br />
-    <div class="login-section">
-        <h2>שלום @User.Identity?.Name</h2>
+    @Html.AntiForgeryToken()
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-7">
+                <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                    <div class="card-header bg-primary text-white text-center py-4">
+                        <h2 class="mb-0 fw-bold">שלום @User.Identity?.Name</h2>
+                    </div>
+                    <div class="card-body p-5 text-center">
+
+                        @* Participant Counter *@
+                        <div class="counter-section mb-4">
+                            <h2 id="participantCounter" class="h1 fw-bold text-dark mb-3">
+                                @Model.ParticipantCount בוגרים כבר נרשמו למפגש
+                            </h2>
+
+                            @* EVERYTHING BELOW THIS NOW HAS LARGER FONTS *@
+                            <div class="large-font-section">
+                                <h4 class="mb-3 text-secondary">רוצה לראות מי עוד מגיע?</h4>
+                                <a asp-page="/ParticipatePage" class="btn btn-outline-primary btn-xl rounded-pill px-5 py-3 mb-2">
+                                    <i class="bi bi-people-fill me-2"></i>לרשימת המשתתפים
+                                </a>
+                            </div>
+                        </div>
+
+                        <hr class="my-5 opacity-25">
+
+                        <div class="toggle-section d-flex flex-column align-items-center large-font-section">
+                            <label class="form-check-label fw-bold mb-4 toggle-label-large" for="participateToggle">
+                                אני מתכוון להגיע למפגש
+                            </label>
+                            <div class="form-check form-switch p-0 m-0">
+                                <input class="form-check-input custom-switch-xl" type="checkbox" id="participateToggle"
+                                       @(Model.IsParticipating ? "checked" : "")
+                                       onchange="toggleParticipation(this)">
+                            </div>
+                            <p class="text-dark mt-4 fw-medium italic-note auto-save-note">
+                                (בחירתך נשמרת אוטומטית)
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 }
+
 <style>
-    /* 1. Ensure the container is a flex container and reverses the visual order */
     .rtl-radio-swap {
         display: flex;
-        /* flex-direction: row-reverse; */ /* This is the key: it visually swaps the Input (first) and Label (second) */
-        align-items: center; /* Ensures vertical alignment */
-        /* Since the overall page is RTL, this results in: [Label] [Input] */
+        align-items: center;
     }
 
-        /* 2. Adjust the margins on the input to create space between the button and the text */
         .rtl-radio-swap .form-check-input {
-            /* Remove default LTR spacing */
             margin-right: 0 !important;
-            /* Add spacing on the left side of the input (between the input and the label text) */
             margin-left: 0.5rem !important;
         }
+
+    .form-switch .form-check-input {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+        transition: background-position 0.15s ease-in-out, background-color 0.15s ease-in-out;
+    }
+
+        .form-switch .form-check-input:checked {
+            background-color: #198754; /* Green when active */
+            border-color: #198754;
+        }
+
+    .card {
+        transition: transform 0.3s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px); /* Subtle lift effect */
+        }
+
+    /* Custom Large Font Styles */
+    .large-font-section h4 {
+        font-size: 2rem !important; /* Significantly larger secondary text */
+    }
+
+    .btn-xl {
+        font-size: 1.8rem !important; /* Larger button text */
+        font-weight: 600;
+    }
+
+    .toggle-label-large {
+        font-size: 2.2rem !important; /* Very large label for the toggle */
+    }
+
+    .italic-note {
+        font-size: 1.4rem !important; /* Larger subtext at the bottom */
+    }
+
+    /* Extra Large Switch */
+    .custom-switch-xl {
+        width: 5rem !important;
+        height: 2.5rem !important;
+        cursor: pointer;
+        float: none !important;
+    }
+
+    /* Ensuring the switch "knob" scales with the larger size */
+    .form-switch .custom-switch-xl {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+    }
+
+        .form-switch .custom-switch-xl:checked {
+            background-color: #198754;
+            border-color: #198754;
+        }
 </style>
+
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        async function toggleParticipation(checkbox) {
+            // debugger;
+            const isChecked = checkbox.checked;
+
+            // Get the anti-forgery token from the page
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            try {
+                const response = await fetch('?handler=ToggleParticipation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(isChecked)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        // Update the text on the screen without refreshing
+                        document.getElementById('participantCounter').innerText = `${result.newCount} בוגרים כבר נרשמו למפגש`;
+                    } else {
+                        alert('חלה שגיאה בעדכון הרישום.');
+                        checkbox.checked = !isChecked; // Revert switch
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('שגיאת תקשורת עם השרת.');
+                checkbox.checked = !isChecked; // Revert switch
+            }
+        }
+    </script>
 }
