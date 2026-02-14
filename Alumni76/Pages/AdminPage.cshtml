@@ -6,29 +6,35 @@
 }
 
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show mt-3 mx-4" role="alert">
-            @Html.Raw(TempData["SuccessMessage"])
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show mt-3 mx-4" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mt-3 mx-4" role="alert">
+        @Html.Raw(TempData["SuccessMessage"])
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-3 mx-4" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 <div class="full-width-content main-container">
     <div class="buttunBox">
-        <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">
-            סינון
-        </button>
         <br />
-        <form method="post" asp-page-handler="ResetSort" class="d-inline">
-            <button type="submit" class="btn btn-primary filter-button">איפוס</button>
-        </form>
+            <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">
+                סינון
+            </button>
+            <br />
+            <form method="post" asp-page-handler="ResetSort" class="d-inline">
+                <button type="submit" class="btn btn-primary filter-button">איפוס</button>
+            </form>
+        <br /><br /><br /><br />
+        <div id="countersBox">
+            <h3>בוגרים</h3><h5> @Model.CountAllUsers / @Model.CountActiveUsers</h5><br />
+            <h3>מגיעים</h3><h5>@Model.CountParticipants</h5>
+        </div>
     </div>
     <div class="userTable">
         <table class="table table-sm table-bordered user-table-compact">
@@ -91,10 +97,10 @@
                                 <input class="form-check-input" type="checkbox" name="Participate" value="true" @(user.Participate ? "checked" : "")>
                                 <input type="hidden" name="Participate" value="false" />
                             </div>
-                        </td>                       
+                        </td>
                         <td>
                             <button type="submit" class="btn btn-sm btn-success w-100">שמור</button>
-                        </td>                        
+                        </td>
                         </form>
                         <td>
                             <form method="post" asp-page-handler="ResetPassword">
@@ -162,6 +168,14 @@
 
     .form-check-input {
         cursor: pointer;
+    }
+    #countersBox{
+        border-width:1px;
+        border-style:ridge;
+        background-color:lightcyan; 
+        text-align:center;
+        padding-top:20px;
+        padding-bottom:20px;
     }
 </style>
 @section Scripts {

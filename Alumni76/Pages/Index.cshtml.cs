@@ -143,7 +143,15 @@ namespace Alumni76.Pages
                              $"שלום {user.FirstName},<br><br>ברוך הבא למערכת. כדי להשלים את הכניסה הראשונית, אנא הזן את קוד האימות הבא:<br><br>" +
                              $"<strong>{code}</strong><br><br>קוד זה תקף למשך 10 דקות.<br><br>בברכה,<br>חבריך מעירוני ה</div>";
 
-            await _emailService.SendEmailAsync(user.Email!, emailSubject, emailBody);
+            try
+            {
+                await _emailService.SendEmailAsync(user.Email!, emailSubject, emailBody);
+            }
+            catch (Exception ex)
+            {
+                // Log the error so you know it failed, but let the user log in anyway!
+                _logger.LogError(ex, $"Could not send welcome email to {user.Email}.");
+            }
 
             // Redirect to the new verification page
             TempData["UserIdForVerification"] = user.Id;

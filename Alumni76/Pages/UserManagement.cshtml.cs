@@ -30,7 +30,9 @@ namespace Alumni76.Pages
         public string? Dir { get; set; }
 
         public UserManagementModel(ApplicationDbContext dbContext, ILogger<UserManagementModel> logger, ITimeProvider timeProvider)
-            : base(dbContext, logger, timeProvider) { }
+            : base(dbContext, logger, timeProvider) 
+        {
+        }
 
         public class UserDisplayModel
         {
@@ -42,9 +44,9 @@ namespace Alumni76.Pages
             public string? Email { get; set; }
             public bool Active { get; set; }
             public bool IsAdmin { get; set; }
-        }
+        }       
         public new async Task OnGetAsync()
-        {
+        {           
             ModelState.Clear();
             await base.OnGetAsync();
             CheckForSpecialAdmin();

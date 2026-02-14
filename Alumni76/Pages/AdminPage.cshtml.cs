@@ -26,6 +26,10 @@ namespace Alumni76.Pages
 
         [BindProperty(SupportsGet = true)]
         public FilterModel? FilterModel { get; set; }
+        public int CountAllUsers { get; set; }
+        public int CountActiveUsers { get; set; }
+        public int CountParticipants { get; set; }
+
         public AdminPageModel(ApplicationDbContext dbContext, ILogger<AdminPageModel> logger,
             IPasswordHasher<User> passwordHasher, IEmailService emailService, ITimeProvider timeProvider)
             : base(dbContext, logger, timeProvider)
@@ -43,33 +47,31 @@ namespace Alumni76.Pages
             {
                 query = query.ApplyFilters(FilterModel);
             }
-            var participatingIds = await _dbContext.Participates
-                .Select(p => p.UserId)
-                .ToListAsync();
-            var participatingSet = new HashSet<int>(participatingIds);
 
-            Users = await query
-                .Select(u => new UserUpdateModel
-                {
-                    UserId = u.Id,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName,
-                    MaidenName = u.MaidenName,
-                    NickName = u.NickName,
-                    Email = u.Email,
-                    Class = u.Class,
-                    Phone1 = u.Phone1,
-                    Phone2 = u.Phone2,
-                    Address = u.Address,
-                    Active = u.Active,
-                    // Check against the HashSet loaded above 
+            Users = await query.Select(u => new UserUpdateModel
+                        {
+                            UserId = u.Id,
+                            FirstName = u.FirstName,
+                            LastName = u.LastName,
+                            MaidenName = u.MaidenName,
+                            NickName = u.NickName,
+                            Email = u.Email,
+                            Class = u.Class,
+                            Phone1 = u.Phone1,
+                            Phone2 = u.Phone2,
+                            Address = u.Address,
+                            Active = u.Active,
+                            Participate = _dbContext.Participates.Any(p => p.UserId == u.Id)
+                        })
+                        .OrderBy(u => u.Class)
+                        .ToListAsync();
 
-                    Participate = participatingSet.Contains(u.Id)
-                })
-                .OrderBy(u => u.Class)
-                .ThenBy(u => u.FirstName)
-                .ThenBy(u => u.LastName)
-                .ToListAsync();
+            // Counting Users
+            //CountAllUsers = await _dbContext.Users.CountAsync();
+            //CountActiveUsers = await _dbContext.Users.CountAsync(u => u.Active);
+            CountAllUsers = await query.CountAsync();
+            CountActiveUsers = await query.CountAsync(u => u.Active);
+            CountParticipants = await _dbContext.Participates.CountAsync();          
         }
 
         private void SetFilterModel()
