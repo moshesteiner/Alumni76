@@ -7,7 +7,7 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 @{
-                                bool isMaintenanceMode = Configuration.GetValue<bool>("MaintenanceMode:IsEnabled");
+                                    bool isMaintenanceMode = Configuration.GetValue<bool>("MaintenanceMode:IsEnabled");
 }
 <head>
     <meta charset="utf-8" />
@@ -31,13 +31,7 @@
                         var isSpecial = User.HasClaim("IsSpecialAdmin", "true") ? true : false;
                         var isAdmin = User.IsInRole("Admin");
                     }
-                </div>
-                @* <div id="subTitleLeft" class="container-fluid py-3">
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <h3 style="margin:0px;padding:0px"> @User.Identity.Name</h3>
-                    }
-                </div> *@
+                </div>               
             </div>
         </header>
 
@@ -49,11 +43,15 @@
             }
             else
             {
-                @* <h2>עירוני ה</h2> *@
-                @* <small>מחזור כא</small> *@
-                <a asp-page="/AlumniPic">
-                    <img src="~/images/logo.png" alt="Logo" class="navbar-logo" />
-                </a>
+                <div class="logo-container">
+                    <a asp-page="/AlumniPic">
+                        <img src="~/images/logo.png" alt="Logo" class="navbar-logo" />
+                    </a>
+                    <div class="logo-text">
+                        <h2>עירוני ה</h2>
+                        <h2>מחזור כא</h2>
+                    </div>
+                </div>
             }
         </div>
 
@@ -94,7 +92,7 @@
                                 <br />
                                 <hr />
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-page="/AdminPage">עדכון רשימות</a>
+                                    <a class="nav-link text-dark" asp-area="" asp-page="/AdminPage">ניהול בוגרים</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-page="/AddUser">הוספת חבר/ה</a>
@@ -105,7 +103,8 @@
                             }
                             @if (isSpecial)
                             {
-                                <br /><hr />
+                                <br />
+                                <hr />
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-page="/UserManagement">ניהול משתמשים</a>
                                 </li>
@@ -187,8 +186,7 @@
                     </div>
                     <div id="footer-left">
                         version: @AppSettings.Value.Version (build @AppSettings.Value.BuildNumber)<br />
-                        source: @AppSettings.Value.GitCommitHash<br />
-                        db: @dbName
+                        source: @AppSettings.Value.GitCommitHash | db: @dbName
                     </div>
                 </div>
             }
@@ -205,8 +203,7 @@
                     </div>
                     <div id="footer-left">
                         version: @AppSettings.Value.Version (build @AppSettings.Value.BuildNumber)<br />
-                        source: @AppSettings.Value.GitCommitHash<br />
-                        db: @dbName
+                        source: @AppSettings.Value.GitCommitHash | db: @dbName
                     </div>
                 </div>
             }
@@ -239,6 +236,7 @@
                 padding: 2px 5px;
                 font-size: 0.95rem; /* Increased from 0.85rem */
                 height: 31px;
+            }
         </style>
 
     </div> @* End of layout-wrapper *@

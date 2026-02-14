@@ -2,6 +2,7 @@
 using Alumni76.Models;
 using Alumni76.Pages.Common;
 using Alumni76.Utilities;
+using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
@@ -118,9 +119,22 @@ namespace Alumni76.Pages
 
             return Sort switch
             {
-                "FirstName" => Dir == "desc" ? query.OrderByDescending(u => u.FirstName) : query.OrderBy(u => u.FirstName),
-                "LastName" => Dir == "desc" ? query.OrderByDescending(u => u.LastName) : query.OrderBy(u => u.LastName),
-                "Class" => Dir == "desc" ? query.OrderByDescending(u => u.Class) : query.OrderBy(u => u.Class),
+                "FirstName" => Dir == "desc" ? 
+                        query.OrderByDescending(u => u.FirstName).ThenByDescending(u=>u.LastName) : 
+                        query.OrderBy(u => u.FirstName).ThenBy(u=>u.LastName),
+
+                "LastName" => Dir == "desc" ? 
+                        query.OrderByDescending(u => u.LastName).ThenByDescending(u=>u.FirstName) : 
+                        query.OrderBy(u => u.LastName).ThenBy(u=>u.FirstName),
+
+                "Class" => Dir == "desc" ? 
+                        query.OrderByDescending(u => u.Class).ThenByDescending(u => u.FirstName).ThenByDescending(u => u.LastName) : 
+                        query.OrderBy(u => u.Class).ThenBy(u => u.FirstName).ThenBy(u => u.LastName),
+
+                "LastLogin" => Dir == "desc" ?
+                        query.OrderByDescending(u => u.LastLogin).ThenByDescending(u => u.FirstName).ThenByDescending(u => u.LastName) :
+                        query.OrderBy(u => u.LastLogin).ThenBy(u => u.FirstName).ThenBy(u => u.LastName),
+
                 // Add a default case to satisfy the compiler
                 _ => query.OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
             };

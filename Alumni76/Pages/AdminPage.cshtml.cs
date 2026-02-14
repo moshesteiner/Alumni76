@@ -30,6 +30,12 @@ namespace Alumni76.Pages
         public int CountActiveUsers { get; set; }
         public int CountParticipants { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public string? Sort { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? Dir { get; set; }
+
         public AdminPageModel(ApplicationDbContext dbContext, ILogger<AdminPageModel> logger,
             IPasswordHasher<User> passwordHasher, IEmailService emailService, ITimeProvider timeProvider)
             : base(dbContext, logger, timeProvider)
@@ -48,32 +54,67 @@ namespace Alumni76.Pages
                 query = query.ApplyFilters(FilterModel);
             }
 
-            Users = await query.Select(u => new UserUpdateModel
-                        {
-                            UserId = u.Id,
-                            FirstName = u.FirstName,
-                            LastName = u.LastName,
-                            MaidenName = u.MaidenName,
-                            NickName = u.NickName,
-                            Email = u.Email,
-                            Class = u.Class,
-                            Phone1 = u.Phone1,
-                            Phone2 = u.Phone2,
-                            Address = u.Address,
-                            Active = u.Active,
-                            Participate = _dbContext.Participates.Any(p => p.UserId == u.Id)
-                        })
-                        .OrderBy(u => u.Class)
-                        .ToListAsync();
+            var sortState = new List<string>();
+            if (!string.IsNullOrEmpty(Sort))
+            {
+                sortState.Add($"{Sort}_{(Dir == "desc" ? "desc" : "asc")}");
+            }
+            ViewData["SortState"] = sortState;
+            
+            var usersQuery = query.Select(u => new UserUpdateModel
+                    {
+                        UserId = u.Id,
+                        FirstName = u.FirstName,
+                        LastName = u.LastName,
+                        MaidenName = u.MaidenName,
+                        NickName = u.NickName,
+                        Email = u.Email,
+                        Class = u.Class,
+                        Phone1 = u.Phone1,
+                        Phone2 = u.Phone2,
+                        Address = u.Address,
+                        Active = u.Active,
+                        LastLogin = u.LastLogin,
+                        Participate = _dbContext.Participates.Any(p => p.UserId == u.Id)
+                     });
+            usersQuery = ApplySort(usersQuery);
+            Users = await usersQuery.ToListAsync();
 
             // Counting Users
-            //CountAllUsers = await _dbContext.Users.CountAsync();
-            //CountActiveUsers = await _dbContext.Users.CountAsync(u => u.Active);
             CountAllUsers = await query.CountAsync();
             CountActiveUsers = await query.CountAsync(u => u.Active);
             CountParticipants = await _dbContext.Participates.CountAsync();          
         }
+        //private IQueryable<User> ApplySort(IQueryable<User> query)
+        private IQueryable<UserUpdateModel> ApplySort(IQueryable<UserUpdateModel> query)
+        {
+            if (string.IsNullOrEmpty(Sort))
+            {
+                return query.OrderBy(u => u.Class).ThenBy(u => u.FirstName).ThenBy(u => u.LastName);
+            }
 
+            return Sort switch
+            {
+                "FirstName" => Dir == "desc" ?
+                        query.OrderByDescending(u => u.FirstName).ThenByDescending(u => u.LastName) :
+                        query.OrderBy(u => u.FirstName).ThenBy(u => u.LastName),
+
+                "LastName" => Dir == "desc" ?
+                        query.OrderByDescending(u => u.LastName).ThenByDescending(u => u.FirstName) :
+                        query.OrderBy(u => u.LastName).ThenBy(u => u.FirstName),
+
+                "Class" => Dir == "desc" ?
+                        query.OrderByDescending(u => u.Class).ThenByDescending(u => u.FirstName).ThenByDescending(u => u.LastName) :
+                        query.OrderBy(u => u.Class).ThenBy(u => u.FirstName).ThenBy(u => u.LastName),
+
+                "LastLogin" => Dir == "desc" ?
+                        query.OrderByDescending(u => u.LastLogin).ThenByDescending(u => u.FirstName).ThenByDescending(u => u.LastName) :
+                        query.OrderBy(u => u.LastLogin).ThenBy(u => u.FirstName).ThenBy(u => u.LastName),
+
+                // Add a default case to satisfy the compiler
+                _ => query.OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+            };
+        }
         private void SetFilterModel()
         {
             string? json = HttpContext.Session.GetString(FilterSessionKey);
@@ -208,6 +249,7 @@ namespace Alumni76.Pages
             public string? Phone2 { get; set; }
             public string? Address { get; set; }
             public bool Active { get; set; }
+            public DateTime? LastLogin { get; set; }
             public bool Participate { get; set; }
         }
     }

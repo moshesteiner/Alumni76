@@ -62,7 +62,7 @@ body {
     display: contents; /* Allows children to participate directly in body's grid */
 }
 
-#logo {
+#logoOld {
     grid-area: logo;
     text-align: center;
     /*font-size: 2em;*/
@@ -81,18 +81,60 @@ body {
     overflow: hidden; /* Prevents anything from leaking out */
     padding: 10px;
 }
-.navbar-logo {
-    /* This is the secret: it will never be taller than the header */
-    max-height: 80px;
-    width: auto; /* Keeps aspect ratio */
-    max-width: 100%; /* Ensures it doesn't overflow horizontally on small screens */
-    object-fit: contain; /* Keeps the image from stretching */
-    transition: transform 0.3s ease; /* Optional: smooth effect */
+/* Update or Add these specific rules */
+
+.logo-container {
+    display: flex;
+    /* row-reverse in an RTL environment moves the first child (logo) to the left */
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 
-    .navbar-logo:hover {
-        transform: scale(1.05); /* Optional: slight pop on hover */
+.navbar-logo {
+    /* Ensure it fills the height as requested */
+    height: 80px;
+    width: auto;
+    object-fit: contain;
+    margin-right: 10px; /* Space between logo and text */
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    text-align: right; /* Keep text aligned right for Hebrew */
+    margin-left:20px;
+}
+
+    .logo-text h2 {
+        margin: 0;
+        padding: 0;
+        /* Increased size */
+        font-size: 1.8rem !important;
+        line-height: 1.1;
     }
+
+    .logo-text h3 {
+        margin: 0;
+        padding: 0;
+        /* Increased size, slightly smaller than h2 */
+        font-size: 1.2rem !important;
+        font-weight: normal;
+    }
+
+/* Cleanup existing #logo styles in site.css */
+#logo {
+    grid-area: logo;
+    padding: 5px;
+    background-color: aquamarine;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
 #title-area {
     grid-area: title-area;

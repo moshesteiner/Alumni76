@@ -1,5 +1,6 @@
 ﻿@page
 @model AdminPageModel
+@using Alumni76.Utilities
 @{
     ViewData["Title"] = "ניהול בוגרים";
     var classOptions = new List<string> { "", "יב-1", "יב-2", "יב-3", "יב-4", "יב-5" };
@@ -23,36 +24,75 @@
 <div class="full-width-content main-container">
     <div class="buttunBox">
         <br />
+        <br />
             <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">
                 סינון
             </button>
             <br />
-            <form method="post" asp-page-handler="ResetSort" class="d-inline">
+            <form method="post" asp-page-handler="ResetSort" >
                 <button type="submit" class="btn btn-primary filter-button">איפוס</button>
             </form>
         <br /><br /><br /><br />
         <div id="countersBox">
-            <h3>בוגרים</h3><h5> @Model.CountAllUsers / @Model.CountActiveUsers</h5><br />
+            <h3>בוגרים</h3><h5>@Model.CountAllUsers / @Model.CountActiveUsers</h5><br />
             <h3>מגיעים</h3><h5>@Model.CountParticipants</h5>
         </div>
     </div>
     <div class="userTable">
+        @{
+            var sortState = (List<string>)(ViewData["SortState"])!;
+            Func<string, string> getSortDir = colName =>
+            {
+                if (sortState != null && sortState.Any() && sortState.First().StartsWith(colName))
+                {
+                    return sortState.First().EndsWith("_asc") ? "desc" : "asc";
+                }
+                return "asc";
+            };
+            Func<string, string> getSortDirIcon = colName =>
+            {
+                if (sortState == null || !sortState.Any() || !sortState.First().StartsWith(colName)) return "";
+                return sortState.First().EndsWith("_asc") ? "up" : "down";
+            };
+
+            // Helper to check if this column is the one currently sorted
+            Func<string, bool> isCurrentSort = colName =>
+            sortState != null && sortState.Any() && sortState.First().StartsWith(colName);
+
+        }
         <table class="table table-sm table-bordered user-table-compact">
             <thead>
                 <tr style="background-color: #a0a0a0;">
                     <th style="width: 50px;">פעיל</th>
                     <th width="2%"></th>
-                    <th width="6%">שם פרטי</th>
-                    <th style="width: 8%;">שם משפחה</th>
+                    <th style="width: 6%;" class="sortable-header @(isCurrentSort("FirstName") ? "active-sort-col" : "")">
+                        <a asp-page="AdminPage" asp-route-sort="FirstName" asp-route-dir="@getSortDir("FirstName")">
+                            שם פרטי <i class="bi @getSortDirIcon("FirstName")"></i>
+                        </a>
+                    </th>
+                    <th style="width: 8%;" class="sortable-header @(isCurrentSort("LastName") ? "active-sort-col" : "")">
+                        <a asp-page="AdminPage" asp-route-sort="LastName" asp-route-dir="@getSortDir("LastName")">
+                            שם משפחה <i class="bi @getSortDirIcon("LastName")"></i>
+                        </a>
+                    </th>
                     <th style="width: 8%;">שם נעורים</th>
                     <th style="width: 6%;">כינוי</th>
-                    <th style="width: 80px;">כיתה</th>
-                    <th>טלפון 1</th>
-                    <th>טלפון 2</th>
+                    <th style="width: 5%;" class="sortable-header @(isCurrentSort("Class") ? "active-sort-col" : "")">
+                        <a asp-page="AdminPage" asp-route-sort="Class" asp-route-dir="@getSortDir("Class")">
+                            כיתה <i class="bi @getSortDirIcon("Class")"></i>
+                        </a>
+                    </th>
+                    <th style="width: 9%;">טלפון 1</th>
+                    <th style="width: 9%;">טלפון 2</th>
                     <th style="width: 15%;">אימייל</th>
-                    <th>כתובת</th>
-                    <th style="width: 70px;">משתתף</th>
-                    <th style="width: 70px;">שמירה</th>
+                    <th style="width: 15%;">כתובת</th>
+                    <th style="width: 6%;">משתתף</th>
+                    <th style="width: 8%;">שמירה</th>
+                    <th style="width: 9%;" class="sortable-header @(isCurrentSort("LastLogin") ? "active-sort-col" : "")">
+                        <a asp-page="AdminPage" asp-route-sort="LastLogin" asp-route-dir="@getSortDir("LastLogin")">
+                            כניסה <i class="bi @getSortDirIcon("LastLogin")"></i>
+                        </a>
+                    </th>
                     <th width="70px">סיסמה</th>
                 </tr>
             </thead>
@@ -65,12 +105,9 @@
                     <tr>
                         <form method="post" asp-page-handler="SaveUser">
                             @Html.AntiForgeryToken()
-
-                            @* This hidden input maps to userUpdate.UserId *@
                             <input type="hidden" name="UserId" value="@user.UserId" />
                         <td class="text-center">
                             <div class="form-check form-switch d-flex justify-content-center">
-                                @* Note: value="true" and a hidden input for false is required for bool binding *@
                                 <input class="form-check-input" type="checkbox" name="Active" value="true" @(user.Active ? "checked" : "")>
                                 <input type="hidden" name="Active" value="false" />
                             </div>
@@ -103,6 +140,14 @@
                         </td>
                         </form>
                         <td>
+                            @{
+                                var login = user.LastLogin.HasValue
+                                ? TimeConverter.ConvertUtcToIsraelTime(user.LastLogin.Value).ToString("dd/MM/yyyy")
+                                : "";
+                            }
+                              @login
+                        </td>
+                        <td>
                             <form method="post" asp-page-handler="ResetPassword">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="userId" value="@user.UserId" />
@@ -130,14 +175,31 @@
     .buttunBox {
         flex: 1;
         direction: rtl;
+        display: flex;
+        flex-direction: column;
+        align-items: center; 
+        justify-content: flex-start;
+        gap: 15px;
     }
 
     .filter-button {
-        margin: 40px 0px 0px 20px;
+       /*  margin: 40px 0px 0px 20px; */      
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        width: 100px !important;
+        max-width: 120px;
+        display: block;
     }
 
+    .buttunBox form {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
     .userTable {
-        flex: 20;
+        flex: 15;
         padding: 0px 20px;
     }
 
@@ -174,8 +236,7 @@
         border-style:ridge;
         background-color:lightcyan; 
         text-align:center;
-        padding-top:20px;
-        padding-bottom:20px;
+        padding: 15px;
     }
 </style>
 @section Scripts {
