@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # DO NOT FORGET TO UPDATE THE DATE
 
+## [1.2.3] - 2026-02-XXXXX
+### Added
+- CheckPassword page
+- Check Hebrew password
+
+### Fixed
+- 
+
 ## [1.2.2] - 2026-02-15
 ### Added
 - Events photos links

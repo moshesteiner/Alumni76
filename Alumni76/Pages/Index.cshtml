@@ -17,7 +17,10 @@
 @if (!string.IsNullOrEmpty(errorMessage))
 {
     <div class="alert alert-danger text-center" role="alert">
-        <strong> </strong> @errorMessage
+        @foreach (var modelError in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            @modelError.ErrorMessage
+        }
     </div>
 }
 

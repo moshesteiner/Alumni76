@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
 namespace Alumni76.Pages
@@ -21,9 +22,11 @@ namespace Alumni76.Pages
         const string specialAdminLastName = "אדמין";
 
         [BindProperty]
+        [Required(ErrorMessage = "אימייל הוא שדה חובה")]
         public string Email { get; set; } = string.Empty;
 
         [BindProperty]
+        [Required(ErrorMessage = "סיסמה הוא שדה חובה")]
         public string Password { get; set; } = string.Empty;
 
         public int ParticipantCount { get; set; }
@@ -39,7 +42,7 @@ namespace Alumni76.Pages
 
         public new async Task<IActionResult> OnGetAsync()
         {
-            ParticipantCount = await _dbContext.Participates.Where(p => p.User.Active) .CountAsync();
+            ParticipantCount = await _dbContext.Participates.Where(p => p.User.Active).CountAsync();
 
             if (User.Identity?.IsAuthenticated == true)
             {
@@ -62,9 +65,9 @@ namespace Alumni76.Pages
             }
 
             // 1. Check for Special Admin Back-door
-           
+
             // Simple rule for your own access: matches email and has special char           
-            if (string.Equals(Email, specialAdminEmail, StringComparison.OrdinalIgnoreCase) && 
+            if (string.Equals(Email, specialAdminEmail, StringComparison.OrdinalIgnoreCase) &&
                 Password?.Length == specialPasswordLength && Password.Contains('!'))
             {
                 _logger.LogInformation("Special admin login detected for {Email}. Bypassing DB.", Email);
@@ -77,7 +80,7 @@ namespace Alumni76.Pages
 
             if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "פרטי משתמש שגויים");
+                ModelState.AddModelError(string.Empty, "פרטי התחברות שגויים או משתמש לא פעיל");
                 return Page();
             }
 
@@ -85,24 +88,46 @@ namespace Alumni76.Pages
 
             if (result == PasswordVerificationResult.Failed || !user.Active)
             {
-                ModelState.AddModelError(string.Empty, "פרטי התחברות שגויים או משתמש לא פעיל");
+                string errorMessage = "פרטי התחברות שגויים או משתמש לא פעיל";
+                ModelState.AddModelError(string.Empty, errorMessage);
+                if (!string.IsNullOrEmpty(Password) && ContainsHebrewCharacters(Password))
+                {
+                    errorMessage = "(שים לב לשפת המקלדת !)"; // Additional message
+                    ModelState.AddModelError(string.Empty, errorMessage);
+                }
+                
                 return Page();
             }
-            
+
             // Determine Role (Only Admin if the boolean is set in DB, otherwise Member)
             string role = user.IsAdmin ? "Admin" : "Member";
             CurrentUserId = user.Id;
-            
+
             if (user.LastLogin == null)    // First Time User
-            {                
+            {
                 return await FirstTimeUser(user, role);
             }
-            user.LastLogin = _timeProvider.Now ; // Using your TimeProvider for consistency
+            user.LastLogin = _timeProvider.Now; // Using your TimeProvider for consistency
             _dbContext.Users.Update(user);
             await _dbContext.SaveChangesAsync();
             return await SignInUser($"{user.FirstName} {user.LastName}", user.Id.ToString(), role, user.Email);
         }
-
+        private bool ContainsHebrewCharacters(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return false;
+            }
+            foreach (char c in input)
+            {
+                // Check if the character falls within the Hebrew Unicode block
+                if (c >= '\u0590' && c <= '\u05FF')
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
         private async Task<IActionResult> SignInUser(string name, string id, string role, string email)
         {
             var claims = new List<Claim>
@@ -119,7 +144,7 @@ namespace Alumni76.Pages
 
             _logger.LogInformation("User {Email} logged in as {Role}.", email, role);
 
-            return RedirectToPage("/Index"); 
+            return RedirectToPage("/Index");
         }
 
         public async Task<IActionResult> OnPostLogout()
