@@ -40,6 +40,8 @@ namespace Alumni76.Pages
         [BindProperty]
         public IFormFile? BulkAddFile { get; set; }
 
+        private List<(User, string)> NewAddedUsers = new List<(User, string)>();
+
 
         public AddUserModel(ApplicationDbContext dbContext, ILogger<AddUserModel> logger, IPasswordHasher<User> passwordHasher,
                                     IEmailService emailService, ITimeProvider timeProvider) : base(dbContext, logger, timeProvider)
@@ -90,6 +92,8 @@ namespace Alumni76.Pages
         public async Task<IActionResult> OnPostBulkAddAsync()
         {
             await base.OnPostAsync();
+            NewAddedUsers = new List<(User, string)>();
+
             if (BulkAddFile == null || BulkAddFile.Length == 0)
             {
                 TempData["ErrorMessage"] = "נא לבחור קובץ אקסל";
@@ -102,9 +106,8 @@ namespace Alumni76.Pages
             var bulkUsersForLog = new List<string>();
 
             // Pre-load all necessary DB data efficiently           
-
-            var existingUsersMap = await _dbContext.Users
-                .ToDictionaryAsync(u => u.Email!, u => u);
+            
+            var existingUsersMap = await _dbContext.Users.ToDictionaryAsync(u => u.Email!, u => u, StringComparer.OrdinalIgnoreCase);
             try
             {
                 //  Excel Parsing and Row Processing Loop
@@ -139,9 +142,25 @@ namespace Alumni76.Pages
                         }
                     }
                 }
+                await _dbContext.SaveChangesAsync();
 
-                // --- Final Notification ---
+                //  Notify the manager before all other users. prevent emailService crash
                 await SendEmailToLoggedUser(successfullyAddedUsers, notAddedUsers);
+
+                foreach (var newUser in NewAddedUsers)
+                {
+                    try
+                    {
+                        await _emailService.SendWelcomeEmailAsync(newUser.Item1.Email!, newUser.Item1.FirstName!, newUser.Item2);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Failed to send welcome email to new user {newUser.Item1.Email}.");
+                    }
+                }
+
+
+               
 
                 // --- Finalization ---
                 var logMessage = $"הוספה גורפת הושלמה. סה\"כ הוספו/שוייכו: {bulkUsersForLog.Count} חברים.   שורות שנכשלו: {notAddedUsers.Count}.";
@@ -249,76 +268,49 @@ namespace Alumni76.Pages
                                 BulkUserRowData rowData,
                                 Dictionary<string, User> existingUsersMap,
                                 List<string> notAddedUsers)
-        {
-            User userToProcess;
-            string generatedPassword = string.Empty;
-            bool isNewUser = false;
-
-            if (existingUsersMap.TryGetValue(rowData.Email, out User? existingUser))
+        {            
+            if (existingUsersMap.TryGetValue(rowData.Email.ToLower(), out User? existingUser))
             {
-                // 2. User exists: Check for existing assignment
-                userToProcess = existingUser;
                 notAddedUsers.Add($"שורה {rowData.RowNumber} ({rowData.Email}): החבר כבר קיים.");
                 return (false, string.Empty, null);
             }
-            else   // New user: Create and save to get the Id
+            User userToProcess;
+            string generatedPassword = GeneratePassword();
+            bool isNewUser = false;
+
+            isNewUser = true;
+
+            userToProcess = new User
             {
-                isNewUser = true;
+                FirstName = rowData.FirstName,
+                LastName = rowData.LastName,
+                MaidenName = rowData.MaidenName,
+                NickName = rowData.NickName,
+                Class = rowData.Class,
+                Email = rowData.Email,
+                Phone1 = FormatPhoneNumber(rowData.Phone1),
+                Phone2 = FormatPhoneNumber(rowData.Phone2),
+                Address = rowData.Address,
+                Active = true,
+                PasswordHash = _passwordHasher.HashPassword(null!, generatedPassword)
+            };
 
-                generatedPassword = GeneratePassword();
+            _dbContext.Users.Add(userToProcess);
 
-                userToProcess = new User
-                {
-                    FirstName = rowData.FirstName,
-                    LastName = rowData.LastName,
-                    MaidenName = rowData.MaidenName,
-                    NickName = rowData.NickName,
-                    Class = rowData.Class,
-                    Email = rowData.Email,
-                    Phone1 = FormatPhoneNumber(rowData.Phone1),
-                    Phone2 = FormatPhoneNumber(rowData.Phone2),
-                    Address = rowData.Address,
-                    Active = true,
-                    PasswordHash = _passwordHasher.HashPassword(null!, generatedPassword)
-                };
-                _dbContext.Users.Add(userToProcess);
-
-                if (!string.IsNullOrEmpty(rowData.Arrives))
-                {
-                    // Check if the user is already marked as participating
-                    bool alreadyExists = await _dbContext.Participates
-                        .AnyAsync(p => p.UserId == userToProcess.Id);
-
-                    if (!alreadyExists)
-                    {
-                        var arrive = new Participate
-                        {
-                            User = userToProcess 
-                        };
-                        _dbContext.Participates.Add(arrive);
-                    }
-                }
-
-                // send welcome email
-                try
-                {
-                    await _emailService.SendWelcomeEmailAsync(userToProcess.Email!, userToProcess.FirstName!, generatedPassword);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Failed to send welcome email to new user {userToProcess.Email}.");
-                }
-
-                await _dbContext.SaveChangesAsync();
-
-                existingUsersMap.Add(userToProcess.Email!, userToProcess);
+            if (!string.IsNullOrEmpty(rowData.Arrives))
+            {
+                _dbContext.Participates.Add(new Participate { User = userToProcess });
             }
+
+            NewAddedUsers.Add((userToProcess, generatedPassword));
+
+            existingUsersMap.Add(userToProcess.Email!, userToProcess);
 
             // --- Log Entry Creation ---
             string logEntry = $"{userToProcess.FirstName} {userToProcess.LastName} ({userToProcess.Email}) ";
 
             // Return success status, the log entry, and the password (if new user)
-            return (true, logEntry, isNewUser ? generatedPassword : null);
+            return (true, logEntry, generatedPassword);
         }
         private string GeneratePassword()
         {

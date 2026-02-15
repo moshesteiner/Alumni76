@@ -97,6 +97,9 @@ namespace Alumni76.Pages
             {                
                 return await FirstTimeUser(user, role);
             }
+            user.LastLogin = _timeProvider.Now ; // Using your TimeProvider for consistency
+            _dbContext.Users.Update(user);
+            await _dbContext.SaveChangesAsync();
             return await SignInUser($"{user.FirstName} {user.LastName}", user.Id.ToString(), role, user.Email);
         }
 

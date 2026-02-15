@@ -6,9 +6,11 @@ using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using static Alumni76.Pages.AdminPageModel;
 
@@ -17,6 +19,8 @@ namespace Alumni76.Pages
     [Authorize(Roles = "Admin")]
     public class UserManagementModel : BasePageModel<UserManagementModel>
     {
+        private readonly IPasswordHasher<User> _passwordHasher;
+
         [BindProperty(SupportsGet = true)]
         public FilterModel? FilterModel { get; set; }
 
@@ -30,9 +34,10 @@ namespace Alumni76.Pages
         [BindProperty(SupportsGet = true)]
         public string? Dir { get; set; }
 
-        public UserManagementModel(ApplicationDbContext dbContext, ILogger<UserManagementModel> logger, ITimeProvider timeProvider)
-            : base(dbContext, logger, timeProvider) 
+        public UserManagementModel(ApplicationDbContext dbContext, ILogger<UserManagementModel> logger,
+            IPasswordHasher<User> passwordHasher, ITimeProvider timeProvider): base(dbContext, logger, timeProvider) 
         {
+            _passwordHasher = passwordHasher;
         }
 
         public class UserDisplayModel
@@ -177,6 +182,37 @@ namespace Alumni76.Pages
             TempData["SuccessMessage"] = $"הסטטוס של {user.FirstName} {user.LastName} עודכן.";
 
             return RedirectToPage();
+        }
+
+        public async Task<IActionResult> OnPostEmergencyPasswordResetAsync()
+        {
+            // 1. Only target users who have NEVER logged in
+            var usersToReset = await _dbContext.Users
+                .Where(u => u.LastLogin == null)
+                .ToListAsync();
+
+            return null!;
+
+            var exportData = new StringBuilder();
+            // 2. Added ID column to help you identify duplicates in SQL
+            exportData.AppendLine("Id,Name,Email,NewPassword");
+
+            foreach (var user in usersToReset)
+            {
+                string newPassword = Guid.NewGuid().ToString().Substring(0, 6);
+                user.PasswordHash = _passwordHasher.HashPassword(user, newPassword);
+
+                // 3. Export with ID and the Excel-friendly password format
+                exportData.AppendLine($"{user.Id},\"{user.FirstName} {user.LastName}\",{user.Email},\"{newPassword}\"");
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            // 4. Hebrew-friendly encoding (UTF-8 with BOM)
+            var encoding = new UTF8Encoding(true);
+            var bytes = encoding.GetBytes(exportData.ToString());
+
+            return File(bytes, "text/csv", "Alumni_Emergency_Export.csv");
         }
     }
 }

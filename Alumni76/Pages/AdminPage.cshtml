@@ -16,11 +16,12 @@
 }
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show mt-3 mx-4" role="alert">
-        @TempData["ErrorMessage"]
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
+
 <div class="full-width-content main-container">
     <div class="buttunBox">
         <br />
@@ -113,8 +114,8 @@
                             </div>
                         </td>
                         <td>@(line++)</td>
-                        <td><input name="FirstName" value="@user.FirstName" class="form-control form-control-sm" /></td>
-                        <td><input name="LastName" value="@user.LastName" class="form-control form-control-sm" /></td>
+                        <td><input name="FirstName" value="@user.FirstName" class="form-control form-control-sm" required /></td>
+                        <td><input name="LastName" value="@user.LastName" class="form-control form-control-sm" required /></td>
                         <td><input name="MaidenName" value="@user.MaidenName" class="form-control form-control-sm" /></td>
                         <td><input name="NickName" value="@user.NickName" class="form-control form-control-sm" /></td>
                         <td>
@@ -125,9 +126,9 @@
                                 }
                             </select>
                         </td>
-                        <td><input name="Phone1" value="@user.Phone1" class="form-control form-control-sm" /></td>
+                        <td><input name="Phone1" value="@user.Phone1" class="form-control form-control-sm" required /></td>
                         <td><input name="Phone2" value="@user.Phone2" class="form-control form-control-sm" /></td>
-                        <td style="direction: ltr;"><input name="Email" value="@user.Email" class="form-control form-control-sm" /></td>
+                        <td style="direction: ltr;"><input name="Email" value="@user.Email" class="form-control form-control-sm" required /></td>
                         <td><input name="Address" value="@user.Address" class="form-control form-control-sm" /></td>
                         <td class="text-center">
                             <div class="form-check form-switch d-flex justify-content-center">

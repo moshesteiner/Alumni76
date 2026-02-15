@@ -25,7 +25,7 @@ namespace Alumni76.Utilities
     {
         private readonly EmailClient _emailClient;
         private readonly string _senderAddress;
-        private readonly bool _enableEmailSending;
+        private  bool _enableEmailSending;    // removed the readonly to allow debug
         private readonly string _templatePath;
         private readonly ILogger<EmailService> _logger;
 

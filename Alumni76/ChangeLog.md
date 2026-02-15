@@ -10,9 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - LastLogin to AdminPage
 - More Sort options to AdminPage
+- Emergency button to SpecialAdmin Page to force new passowrd for all users (for testing purposes)
 
 ### Fixed
 - Cosmetics to tables
+- Added LastLogin for not first time user
+- Fixed empty fields in Admin page
 
 
 ## [1.2.0] - 2026-02-14

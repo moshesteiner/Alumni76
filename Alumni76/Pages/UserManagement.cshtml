@@ -18,8 +18,10 @@
         </div>
     }
 
+
     <div class="main-container">
         <div class="buttunBox">
+            <br /><br />
             <button type="button" class="btn btn-primary filter-button" data-bs-toggle="modal" data-bs-target="#filterSortModal">
                 סינון
             </button>
@@ -27,8 +29,15 @@
             <form method="post" asp-page-handler="ResetSort" class="d-inline">
                 <button type="submit" class="btn btn-primary filter-button">איפוס</button>
             </form>
-        </div>
 
+            <br /><br /><br /><br /><br /><br />
+
+            @*  Emergency button   *@
+
+            <form method="post" asp-page-handler="EmergencyPasswordReset" class="d-inline">
+                <button type="submit" class="btn btn-warning filter-button">יצירת סיסמאות לכולם</button>
+            </form>
+        </div>
         <div class="userTable">
             @if (Model.DisplayUsers != null && Model.DisplayUsers.Any())
             {
@@ -83,23 +92,23 @@
                             <tr data-user-id="@user.UserId">
                                 <form method="post" asp-page-handler="UpdateUser">
                                     <input type="hidden" name="userId" value="@user.UserId" />
-                                    <td>@(Model.DisplayUsers.IndexOf(user) + 1)</td>
-                                    <td>@user.FirstName</td>
-                                    <td>@user.LastName</td>
-                                    <td>@user.MaidenName</td>
-                                    <td>@user.Class</td>
-                                    <td style="text-align: left; direction: ltr;">@user.Email</td>
-                                    <td class="text-center">
-                                        <input type="checkbox" name="isActive" value="true" @(user.Active ? "checked" : "") class="form-check-input" />
-                                        <input type="hidden" name="isActive" value="false" />
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="checkbox" name="isAdmin" value="true" @(user.IsAdmin ? "checked" : "") class="form-check-input" />
-                                        <input type="hidden" name="isAdmin" value="false" />
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="submit" class="btn btn-sm btn-success">שמור</button>
-                                    </td>
+                                <td>@(Model.DisplayUsers.IndexOf(user) + 1)</td>
+                                <td>@user.FirstName</td>
+                                <td>@user.LastName</td>
+                                <td>@user.MaidenName</td>
+                                <td>@user.Class</td>
+                                <td style="text-align: left; direction: ltr;">@user.Email</td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="isActive" value="true" @(user.Active ? "checked" : "") class="form-check-input" />
+                                    <input type="hidden" name="isActive" value="false" />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="isAdmin" value="true" @(user.IsAdmin ? "checked" : "") class="form-check-input" />
+                                    <input type="hidden" name="isAdmin" value="false" />
+                                </td>
+                                <td class="text-center">
+                                    <button type="submit" class="btn btn-sm btn-success">שמור</button>
+                                </td>
                                 </form>
                             </tr>
                         }

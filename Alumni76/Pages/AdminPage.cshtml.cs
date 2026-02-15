@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -60,30 +61,30 @@ namespace Alumni76.Pages
                 sortState.Add($"{Sort}_{(Dir == "desc" ? "desc" : "asc")}");
             }
             ViewData["SortState"] = sortState;
-            
+
             var usersQuery = query.Select(u => new UserUpdateModel
-                    {
-                        UserId = u.Id,
-                        FirstName = u.FirstName,
-                        LastName = u.LastName,
-                        MaidenName = u.MaidenName,
-                        NickName = u.NickName,
-                        Email = u.Email,
-                        Class = u.Class,
-                        Phone1 = u.Phone1,
-                        Phone2 = u.Phone2,
-                        Address = u.Address,
-                        Active = u.Active,
-                        LastLogin = u.LastLogin,
-                        Participate = _dbContext.Participates.Any(p => p.UserId == u.Id)
-                     });
+            {
+                UserId = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                MaidenName = u.MaidenName,
+                NickName = u.NickName,
+                Email = u.Email,
+                Class = u.Class,
+                Phone1 = u.Phone1,
+                Phone2 = u.Phone2,
+                Address = u.Address,
+                Active = u.Active,
+                LastLogin = u.LastLogin,
+                Participate = _dbContext.Participates.Any(p => p.UserId == u.Id)
+            });
             usersQuery = ApplySort(usersQuery);
             Users = await usersQuery.ToListAsync();
 
             // Counting Users
-            CountAllUsers = await query.CountAsync();
+            CountAllUsers = await _dbContext.Users.CountAsync();
             CountActiveUsers = await query.CountAsync(u => u.Active);
-            CountParticipants = await _dbContext.Participates.CountAsync();          
+            CountParticipants = await _dbContext.Participates.CountAsync();
         }
         //private IQueryable<User> ApplySort(IQueryable<User> query)
         private IQueryable<UserUpdateModel> ApplySort(IQueryable<UserUpdateModel> query)
@@ -162,6 +163,14 @@ namespace Alumni76.Pages
         // Change the method signature to take a single model
         public async Task<IActionResult> OnPostSaveUserAsync([FromForm] UserUpdateModel userUpdate)
         {
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = $"שגיאת נתונים: {errors}";
+                TempData["ErrorMessage"] = $"נתונים חסרים או לא תקינים: {errors}";
+                return RedirectToPage();
+            }
+
             if (userUpdate == null || userUpdate.UserId == 0) return BadRequest();
 
             var user = await _dbContext.Users.FindAsync(userUpdate.UserId);
@@ -218,7 +227,7 @@ namespace Alumni76.Pages
         private int GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int.TryParse(userIdClaim, out int currentUserId);           
+            int.TryParse(userIdClaim, out int currentUserId);
             return currentUserId;
         }
 
@@ -239,12 +248,18 @@ namespace Alumni76.Pages
         public class UserUpdateModel
         {
             public int UserId { get; set; }
+            [Required(ErrorMessage = "שם פרטי הוא שדה חובה")]
             public string? FirstName { get; set; }
+            [Required(ErrorMessage = "שם משפחה הוא שדה חובה")]
             public string? LastName { get; set; }
             public string? MaidenName { get; set; }
             public string? NickName { get; set; }
             public string? Class { get; set; }
+            [Required(ErrorMessage = "אימייל הוא שדה חובה")]
+            [EmailAddress(ErrorMessage = "כתובת אימייל לא תקינה")]
             public string? Email { get; set; }
+            [Required(ErrorMessage = "חובה להזין מספר טלפון")]
+            [RegularExpression(@"^(\+?\d{1,3}[- ]?)?\(?(\d{3})\)?[- ]?(\d{3,4})[- ]?(\d{4})$|^0?(\d{2,3})[\s-]?(\d{3})[\s-]?(\d{4})$", ErrorMessage = "פורמט לא תקין")]
             public string? Phone1 { get; set; }
             public string? Phone2 { get; set; }
             public string? Address { get; set; }
