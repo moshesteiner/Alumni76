@@ -23,7 +23,7 @@ using System.Security.Claims; // Required for User.FindFirst(ClaimTypes.NameIden
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Alumni76.Pages
+namespace Alumni76.Pages.Admin
 {
     [Authorize(Roles = "Admin")]
     public class AddUserModel : BasePageModel<AddUserModel>
@@ -111,7 +111,7 @@ namespace Alumni76.Pages
             try
             {
                 //  Excel Parsing and Row Processing Loop
-                OfficeOpenXml.ExcelPackage.License.SetNonCommercialPersonal("Moshe Steiner");
+                ExcelPackage.License.SetNonCommercialPersonal("Moshe Steiner");
                 using (var stream = new MemoryStream())
                 {
                     await BulkAddFile.CopyToAsync(stream);

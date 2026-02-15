@@ -14,7 +14,7 @@ using System.Text;
 using System.Text.Json;
 using static Alumni76.Pages.AdminPageModel;
 
-namespace Alumni76.Pages
+namespace Alumni76.Pages.Admin
 {
     [Authorize(Roles = "Admin")]
     public class UserManagementModel : BasePageModel<UserManagementModel>
