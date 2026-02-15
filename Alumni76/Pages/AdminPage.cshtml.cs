@@ -190,8 +190,8 @@ namespace Alumni76.Pages
             user.NickName = userUpdate.NickName;
             user.Email = userUpdate.Email ?? "";
             user.Class = userUpdate.Class;
-            user.Phone1 = userUpdate.Phone1;
-            user.Phone2 = userUpdate.Phone2;
+            user.Phone1 = FormatPhoneNumber(userUpdate.Phone1);
+            user.Phone2 = FormatPhoneNumber(userUpdate.Phone2);
             user.Address = userUpdate.Address;
 
             // PREVENT SELF-DEACTIVATION:
@@ -244,6 +244,41 @@ namespace Alumni76.Pages
 
             SuccessMessage = $"הסיסמה עבור {userToReset.FirstName} אופסה ל: {newTempPassword}";
             return RedirectToPage();
+        }
+        private string FormatPhoneNumber(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
+
+            // 1. Remove all non-digits to analyze the pattern
+            string cleaned = new string(phone.Where(char.IsDigit).ToArray());
+
+            // 2. Handle International Israel code (972...) -> Convert to local (0...)
+            if (cleaned.StartsWith("972") && cleaned.Length > 10)
+            {
+                cleaned = "0" + cleaned.Substring(3);
+            }
+
+            // 3. Israeli Mobile (10 digits: 05X-XXX-XXXX)
+            if (cleaned.Length == 10 && cleaned.StartsWith("05"))
+            {
+                return $"{cleaned.Substring(0, 3)}-{cleaned.Substring(3, 3)}-{cleaned.Substring(6)}";
+            }
+
+            // 4. Israeli Landline (9 digits: 0X-XXX-XXXX)
+            if (cleaned.Length == 9 && cleaned.StartsWith("0"))
+            {
+                return $"{cleaned.Substring(0, 2)}-{cleaned.Substring(2, 3)}-{cleaned.Substring(5)}";
+            }
+
+            // 5. US/Canada Format (11 digits starting with 1: 1-XXX-XXX-XXXX)
+            if (cleaned.Length == 11 && cleaned.StartsWith("1"))
+            {
+                return $"{cleaned.Substring(0, 1)}-{cleaned.Substring(1, 3)}-{cleaned.Substring(4, 3)}-{cleaned.Substring(7)}";
+            }
+
+            // 6. If it's some other international length, return the cleaned digits 
+            // (at least this removes the mess if they typed weirdly)
+            return cleaned.Length > 0 ? cleaned : phone;
         }
         public class UserUpdateModel
         {
